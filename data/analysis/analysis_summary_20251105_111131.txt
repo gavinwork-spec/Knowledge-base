@@ -1,0 +1,22 @@
+知识库分析准备摘要
+==================================================
+生成时间: 2025-11-05 11:11:31
+
+customers: 11 条记录
+drawings: 408 条记录
+factories: 2 条记录
+factory_quotes: 2 条记录
+
+导出文件位置: data/analysis
+
+导出的分析文件:
+- current_alerts.csv
+- customer_analysis.csv
+- customer_segments.csv
+- drawing_analysis.csv
+- drawing_category_stats.csv
+- drawing_monthly_trends.csv
+- factory_performance.csv
+- factory_quotes_analysis.csv
+- price_trends_by_category.csv
+- price_trends_by_factory.csv

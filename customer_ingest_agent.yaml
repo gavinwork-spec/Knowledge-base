@@ -1,0 +1,62 @@
+# Claude Code Agent - 客户资料自动导入代理
+name: customer_ingest_agent
+description: 自动监控客户资料文件夹，检测新文件并导入数据库
+
+# 触发条件 - 监控客户资料文件夹中的文件变化
+triggers:
+  - type: file_added
+    path: "/Users/gavin/Nutstore Files/.symlinks/坚果云/002-客户/**/*"
+    patterns: ["*.xlsx", "*.xls", "*.csv", "*.txt"]
+    recursive: true
+
+  - type: file_modified
+    path: "/Users/gavin/Nutstore Files/.symlinks/坚果云/002-客户/**/*"
+    patterns: ["*.xlsx", "*.xls", "*.csv", "*.txt"]
+    recursive: true
+
+# 执行动作
+actions:
+  - name: run_customer_ingestion
+    type: command
+    command: |
+      cd "/Users/gavin/Knowledge base" && python3 ingest_customers.py
+    timeout: 300000  # 5分钟超时
+    continue_on_error: true
+
+  - name: log_results
+    type: command
+    command: |
+      echo "$(date): 客户资料导入完成" >> "/Users/gavin/Knowledge base/data/processed/agent_activity.log"
+    run_after: ["run_customer_ingestion"]
+
+# 通知设置
+notifications:
+  on_success:
+    - type: log
+      message: "客户资料导入成功完成"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/customer_ingest_success.log"
+      append: true
+
+  on_error:
+    - type: log
+      message: "客户资料导入过程中发生错误"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/customer_ingest_error.log"
+      append: true
+
+# 代理设置
+settings:
+  enabled: true
+  run_mode: "automatic"  # 自动运行
+  max_concurrent_runs: 1
+  cooldown: 60  # 处理完成后冷却60秒
+  retry_count: 2
+  retry_delay: 30
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "/Users/gavin/Knowledge base/data/processed/customer_agent.log"
+  max_size: "10MB"
+  backup_count: 5

@@ -1,0 +1,74 @@
+# Claude Code Agent - 图纸资料自动导入代理
+name: drawing_ingest_agent
+description: 自动监控询盘询价文件夹，检测新文件并导入数据库
+
+# 触发条件 - 监控询盘询价文件夹中的文件变化
+triggers:
+  - type: file_added
+    path: "/Users/gavin/Nutstore Files/.symlinks/坚果云/005-询盘询价/**/*"
+    patterns: ["*.pdf", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.tiff", "*.tif", "*.dwg", "*.dxf", "*.svg"]
+    recursive: true
+
+  - type: file_modified
+    path: "/Users/gavin/Nutstore Files/.symlinks/坚果云/005-询盘询价/**/*"
+    patterns: ["*.pdf", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.bmp", "*.tiff", "*.tif", "*.dwg", "*.dxf", "*.svg"]
+    recursive: true
+
+# 执行动作
+actions:
+  - name: run_drawing_ingestion
+    type: command
+    command: |
+      cd "/Users/gavin/Knowledge base" && python3 ingest_drawings.py
+    timeout: 600000  # 10分钟超时（图纸文件可能较多）
+    continue_on_error: true
+
+  - name: update_statistics
+    type: command
+    command: |
+      cd "/Users/gavin/Knowledge base" && python3 verify_database.py >> "/Users/gavin/Knowledge base/data/processed/daily_stats.log"
+    run_after: ["run_drawing_ingestion"]
+
+  - name: log_activity
+    type: command
+    command: |
+      echo "$(date): 图纸资料导入完成" >> "/Users/gavin/Knowledge base/data/processed/agent_activity.log"
+    run_after: ["update_statistics"]
+
+# 通知设置
+notifications:
+  on_success:
+    - type: log
+      message: "图纸资料导入成功完成"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/drawing_ingest_success.log"
+      append: true
+
+  on_error:
+    - type: log
+      message: "图纸资料导入过程中发生错误"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/drawing_ingest_error.log"
+      append: true
+
+# 代理设置
+settings:
+  enabled: true
+  run_mode: "automatic"  # 自动运行
+  max_concurrent_runs: 1
+  cooldown: 120  # 处理完成后冷却2分钟
+  retry_count: 3
+  retry_delay: 60
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "/Users/gavin/Knowledge base/data/processed/drawing_agent.log"
+  max_size: "50MB"
+  backup_count: 10
+
+# 性能优化
+performance:
+  batch_size: 50  # 批处理文件数量
+  memory_limit: "512MB"
+  temp_dir: "/tmp/drawing_ingest_temp"

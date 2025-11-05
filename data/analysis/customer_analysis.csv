@@ -1,0 +1,12 @@
+id,company_name,contact_email,country,language,first_contact_date,created_at,drawing_count,category_count,last_drawing_date,process_count,days_since_first_contact,days_since_last_activity,activity_level
+1,ABC制造有限公司,john@abc-manufacturing.com,美国,英语,2024-01-15,2025-11-05 03:04:51,1,1,2024-03-01 00:00:00.000000,1,660,614.0,低活跃
+4,AYA Fasteners,info@aya-fasteners.com,巴林,英语,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+3,"Hebei Homelux Technology Co., Ltd",sales@homelux.com,中国,中文,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+8,Lejiang Furniture,contact@lejiangfurniture.com,中国,中文,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+11,UF优纺,contact@uf优纺.com,中国,中文,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+2,XYZ科技公司,zhang@xyz-tech.com,中国,中文,2024-02-20,2025-11-05 03:04:51,1,1,2024-03-15 00:00:00.000000,1,624,600.0,低活跃
+9,富唐公司,contact@富唐公司.com,中国,中文,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+7,巴林客户,contact@巴林客户.com,巴林,英语,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+5,广东阳昶精密制造,sales@yangchang.com,中国,中文,2024-01-01,2025-11-05 03:05:27,2,1,2025-03-20 09:14:28.823580,0,674,230.0,低活跃
+10,昊慕家,contact@昊慕家.com,中国,中文,2024-01-01,2025-11-05 03:05:27,0,0,,0,674,,未活跃
+6,沃耳特五金科技,info@walter-fasteners.com,中国,中文,2024-01-01,2025-11-05 03:05:27,3,1,2025-02-06 15:40:24.000000,0,674,271.0,低活跃

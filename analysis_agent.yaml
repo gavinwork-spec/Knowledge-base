@@ -1,0 +1,77 @@
+# Claude Code Agent - 数据分析准备代理
+name: analysis_preparation_agent
+description: 定期准备业务分析数据和生成提醒
+
+# 触发条件 - 定时执行
+triggers:
+  - type: schedule
+    cron: "0 9 * * 1-5"  # 工作日上午9点
+    timezone: "Asia/Shanghai"
+
+  - type: schedule
+    cron: "0 17 * * 1-5"  # 工作日下午5点
+    timezone: "Asia/Shanghai"
+
+  - type: manual
+    command: "run_analysis"
+
+# 执行动作
+actions:
+  - name: run_data_analysis
+    type: command
+    command: |
+      cd "/Users/gavin/Knowledge base" && python3 prepare_analysis.py
+    timeout: 300000
+    continue_on_error: true
+
+  - name: validate_data_quality
+    type: command
+    command: |
+      cd "/Users/gavin/Knowledge base" && python3 validate_data.py
+    run_after: ["run_data_analysis"]
+
+  - name: check_reminders
+    type: command
+    command: |
+      echo "$(date): 检查业务提醒" >> "/Users/gavin/Knowledge base/data/processed/reminder_check.log"
+    run_after: ["validate_data_quality"]
+
+  - name: send_notifications
+    type: command
+    command: |
+      # 这里可以集成邮件发送或其他通知机制
+      if [ -f "/Users/gavin/Knowledge base/data/analysis/current_alerts.csv" ]; then
+        echo "$(date): 发现 $(wc -l < /Users/gavin/Knowledge base/data/analysis/current_alerts.csv) 个提醒" >> "/Users/gavin/Knowledge base/data/processed/reminder_notifications.log"
+      fi
+    run_after: ["check_reminders"]
+
+# 通知设置
+notifications:
+  on_success:
+    - type: log
+      message: "数据分析准备完成"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/analysis_success.log"
+      append: true
+
+  on_error:
+    - type: log
+      message: "数据分析准备失败"
+    - type: file
+      path: "/Users/gavin/Knowledge base/data/processed/analysis_error.log"
+      append: true
+
+# 代理设置
+settings:
+  enabled: true
+  run_mode: "automatic"
+  max_concurrent_runs: 1
+  retry_count: 2
+  retry_delay: 60
+
+# 日志配置
+logging:
+  level: "INFO"
+  file: "/Users/gavin/Knowledge base/data/processed/analysis_agent.log"
+  max_size: "20MB"
+  backup_count: 5

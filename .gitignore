@@ -1,0 +1,59 @@
+# 数据库文件
+*.sqlite
+*.sqlite3
+*.db
+
+# 日志文件
+logs/
+*.log
+
+# 处理数据和缓存
+data/processed/
+data/cache/
+data/temp/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# 失败文件
+data/failed/
+
+# 备份文件 (但保留备份目录结构)
+data/backups/*
+!data/backups/.gitkeep
+
+# 敏感配置文件
+.env
+config.json
+secrets.json
+
+# 系统文件
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 报告文件 (可选)
+reports/
+!reports/.gitkeep
+
+# 大型媒体文件
+*.pdf
+*.dwg
+*.dxf
+*.zip
+*.rar
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 测试文件
+test_*.py
+*_test.py

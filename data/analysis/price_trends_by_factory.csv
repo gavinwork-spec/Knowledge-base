@@ -1,0 +1,5 @@
+,price,price,price,price,product_category
+,mean,min,max,count,nunique
+factory_name,,,,,
+精密制造工厂A,0.15,0.15,0.15,1,1
+金属制品厂B,25.5,25.5,25.5,1,1
