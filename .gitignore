@@ -1,16 +1,26 @@
+# 知识库系统 - Git忽略文件
+# 确保敏感信息和临时文件不被上传到GitHub
+
+# 敏感客户和询盘数据
+/Users/gavin/Nutstore Files/.symlinks/坚果云/002-客户中/
+/Users/gavin/Nutstore Files/.symlinks/坚果云/005-询盘询价和/
+
 # 数据库文件
 *.sqlite
 *.sqlite3
 *.db
+knowledge_base.db*
 
 # 日志文件
 logs/
 *.log
+*.log.*
 
 # 处理数据和缓存
 data/processed/
 data/cache/
 data/temp/
+data/sensitive/
 __pycache__/
 *.pyc
 *.pyo
@@ -22,12 +32,18 @@ data/failed/
 
 # 备份文件 (但保留备份目录结构)
 data/backups/*
+backup/
+backups/
 !data/backups/.gitkeep
 
 # 敏感配置文件
 .env
+.env.*
 config.json
 secrets.json
+credentials.json
+api_keys.json
+private_keys.pem
 
 # 系统文件
 .DS_Store
@@ -37,10 +53,19 @@ Thumbs.db
 *.swp
 *.swo
 *~
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
 
-# 报告文件 (可选)
+# 报告文件 (包含敏感信息)
 reports/
 !reports/.gitkeep
+*_report.json
+learning_stats.json
+strategy_generation_stats.json
+github_sync_log.json
 
 # 大型媒体文件
 *.pdf
@@ -48,12 +73,67 @@ reports/
 *.dxf
 *.zip
 *.rar
+*.7z
+*.tar.gz
 
 # 临时文件
 tmp/
 temp/
-*.tmp
+drafts/
+*.draft
+*.wip
 
 # 测试文件
 test_*.py
 *_test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python相关
+*.egg-info/
+dist/
+build/
+
+# Node.js (如果使用)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 敏感业务文件 (包含客户信息)
+客户*
+询价*
+报价*
+*customer*
+*client*
+*contact*
+*personal*
+*private*
+*confidential*
+*secret*
+*password*
+*token*
+*key*
+
+# 价格和成本信息
+*price*
+*cost*
+*budget*
+*amount*
+*quote*
+
+# 联系方式
+phone*
+email*
+address*
+contact*
+
+# 压缩和Office文档 (可能包含敏感数据)
+*.docx
+*.xlsx
+
+# 临时索引和处理文件
+embedding_index*
+processed_data/
+temp_processing/

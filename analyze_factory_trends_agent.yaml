@@ -1,0 +1,97 @@
+name: analyze_factory_trends_agent
+description: 工厂报价趋势分析Agent，定期分析报价数据并生成报告
+version: 1.0
+
+# 触发条件
+triggers:
+  # 每月第1天02:00自动执行（在图纸分类后）
+  schedule:
+    cron: "0 2 1 * *"
+    timezone: "Asia/Shanghai"
+
+  # 新报价录入后触发（当报价数量增加超过5个时）
+  data_change:
+    table: factory_quotes
+    condition: "COUNT(*) > (SELECT COUNT(*) FROM factory_quotes WHERE quote_date >= date('now', '-1 month')) + 5"
+
+# 执行的脚本
+actions:
+  - type: python_script
+    script: analyze_factory_quote_trends.py
+    working_directory: "/Users/gavin/Knowledge base"
+
+  # 分析完成后导出统计结果
+  - type: python_script
+    script: export_statistics.py
+    condition: "previous_success"
+    working_directory: "/Users/gavin/Knowledge base"
+
+# 输出配置
+outputs:
+  log_file: "./data/processed/factory_trends_log.json"
+  report_dir: "./data/processed/"
+
+  # 记录执行结果
+  result_format:
+    timestamp: "{{execution_time}}"
+    success: "{{success}}"
+    quotes_analyzed: "{{output.data_summary.total_quotes}}"
+    factories_analyzed: "{{output.data_summary.factories_analyzed}}"
+    anomalies_found: "{{output.analysis_results.anomalies_count}}"
+    processing_time: "{{output.processing_time}}"
+
+# 通知配置
+notifications:
+  on_success:
+    - type: log
+      message: "工厂报价分析完成: {{output.data_summary.total_quotes}}条报价, {{output.analysis_results.anomalies_count}}个异常"
+
+    # 如果发现异常，发送额外通知
+    - type: email
+      condition: "{{output.analysis_results.anomalies_count}} > 0"
+      recipients: ["admin@example.com"]
+      subject: "发现价格异常 - 工厂报价分析报告"
+      body: |
+        分析时间: {{execution_time}}
+        发现异常: {{output.analysis_results.anomalies_count}} 个
+        详细报告: {{output.exported_files.analysis_report}}
+
+  on_failure:
+    - type: log
+      level: error
+      message: "工厂报价分析失败: {{error}}"
+
+    - type: email
+      recipients: ["admin@example.com"]
+      subject: "工厂报价分析任务失败"
+      body: "执行时间: {{execution_time}}\n错误信息: {{error}}"
+
+# 数据质量检查
+data_quality:
+  required_tables:
+    - factory_quotes
+    - factories
+
+  min_records:
+    factory_quotes: 1
+
+  required_columns:
+    factory_quotes: [factory_id, product_category, price, quote_date]
+
+# 重试配置
+retry:
+  max_attempts: 2
+  backoff: "linear"
+  max_delay: 180  # 3分钟
+
+# 资源限制
+resources:
+  max_memory: "1GB"
+  max_cpu_time: 600  # 10分钟
+
+# 工具权限
+allowed_tools:
+  - FileSystem(Read, Write)
+  - PythonExecution
+  - Database(Read, Write)
+  - DataAnalysis

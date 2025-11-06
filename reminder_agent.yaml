@@ -1,0 +1,471 @@
+# 提醒系统自动化Agent配置 - 支持17条提醒规则
+name: reminder_agent
+description: Automated reminder system agent for monitoring business rules and triggering notifications
+version: 2.0.0
+author: System Administrator
+created: 2025-11-06
+updated: 2025-11-06
+
+# ==================== 基础配置 ====================
+config:
+  # 数据库配置
+  database:
+    path: "knowledge_base.db"
+    connection_timeout: 30
+    max_connections: 5
+
+  # 执行配置
+  execution:
+    default_interval_minutes: 15
+    max_retry_attempts: 3
+    retry_delay_seconds: 60
+    batch_size: 100
+    timeout_seconds: 300
+
+  # 通知配置
+  notifications:
+    enabled: true
+    email_enabled: false
+    sms_enabled: false
+    system_enabled: true
+    webhook_enabled: false
+
+# ==================== Agent Triggers ====================
+triggers:
+  # 高优先级规则调度
+  high_priority_schedule:
+    - name: "R001_Drawing_Status_Change"
+      rule_id: "R001"
+      cron: "0 * * * *"  # 每小时执行
+      timezone: "Asia/Shanghai"
+      description: "客户图纸状态变更提醒"
+      enabled: true
+      priority: 1
+
+    - name: "R002_Quotation_Timeout"
+      rule_id: "R002"
+      cron: "*/15 * * * *"  # 每15分钟执行
+      timezone: "Asia/Shanghai"
+      description: "报价超时预警"
+      enabled: true
+      priority: 1
+
+  # 中优先级规则调度
+  middle_priority_schedule:
+    - name: "R006_Batch_Production_Plan"
+      rule_id: "R006"
+      cron: "0 * * * *"  # 每小时执行
+      timezone: "Asia/Shanghai"
+      description: "批次生产计划提醒"
+      enabled: true
+      priority: 2
+
+    - name: "R007_Technical_Parameters_Update"
+      rule_id: "R007"
+      cron: "0 10 * * *"  # 每天10:00执行
+      timezone: "Asia/Shanghai"
+      description: "技术参数更新提醒"
+      enabled: true
+      priority: 2
+
+    - name: "R008_Customer_Follow_up"
+      rule_id: "R008"
+      cron: "0 11 * * *"  # 每天11:00执行
+      timezone: "Asia/Shanghai"
+      description: "客户跟进提醒"
+      enabled: true
+      priority: 2
+
+    - name: "R009_Quotation_Analysis_Report"
+      rule_id: "R009"
+      cron: "0 14 * * *"  # 每天14:00执行
+      timezone: "Asia/Shanghai"
+      description: "报价分析报告提醒"
+      enabled: true
+      priority: 2
+
+    - name: "R010_Production_Progress_Update"
+      rule_id: "R010"
+      cron: "*/30 * * * *"  # 每30分钟执行
+      timezone: "Asia/Shanghai"
+      description: "生产进度更新提醒"
+      enabled: true
+      priority: 2
+
+  # 低优先级规则调度
+  low_priority_schedule:
+    - name: "R011_Data_Backup"
+      rule_id: "R011"
+      cron: "0 20 * * *"  # 每天20:00执行
+      timezone: "Asia/Shanghai"
+      description: "数据备份提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R012_Monthly_Statistics_Report"
+      rule_id: "R012"
+      cron: "0 9 1 * *"  # 每月1号9:00执行
+      timezone: "Asia/Shanghai"
+      description: "月度统计报告提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R013_Employee_Birthday"
+      rule_id: "R013"
+      cron: "0 8 * * *"  # 每天8:00执行
+      timezone: "Asia/Shanghai"
+      description: "员工生日提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R014_Contract_Expiry"
+      rule_id: "R014"
+      cron: "0 10 * * 1"  # 每周一10:00执行
+      timezone: "Asia/Shanghai"
+      description: "合同到期提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R015_Inventory_Warning"
+      rule_id: "R015"
+      cron: "0 15 * * *"  # 每天15:00执行
+      timezone: "Asia/Shanghai"
+      description: "库存预警提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R016_Supplier_Evaluation"
+      rule_id: "R016"
+      cron: "0 16 * * 0"  # 每周日16:00执行（简化为每周）
+      timezone: "Asia/Shanghai"
+      description: "供应商评估提醒"
+      enabled: true
+      priority: 3
+
+    - name: "R017_Equipment_Maintenance"
+      rule_id: "R017"
+      cron: "0 9 * * 0"  # 每周日9:00执行
+      timezone: "Asia/Shanghai"
+      description: "设备维护提醒"
+      enabled: true
+      priority: 3
+
+  # 文件系统事件触发器
+  file_system:
+    - name: drawing_files_added
+      description: "监控新图纸文件添加"
+      directories:
+        - "/Users/gavin/Nutstore Files/.symlinks/坚果云/003-图纸技术文件/"
+        - "/Users/gavin/Nutstore Files/.symlinks/坚果云/002-客户中/"
+      events:
+        - "file_added"
+        - "directory_created"
+      file_patterns:
+        - "*.dwg"
+        - "*.pdf"
+        - "*.step"
+        - "*.iges"
+        - "*.dxf"
+      enabled: true
+      trigger_rules: ["R001"]
+
+    - name: inquiry_files_added
+      description: "监控新询盘文件"
+      directories:
+        - "/Users/gavin/Nutstore Files/.symlinks/坚果云/005-询盘询价和/"
+      events:
+        - "file_added"
+        - "directory_created"
+      file_patterns:
+        - "*.pdf"
+        - "*.xlsx"
+        - "*.docx"
+        - "*.eml"
+      enabled: true
+      trigger_rules: ["R008"]
+
+    - name: quotation_files_added
+      description: "监控新报价文件"
+      directories:
+        - "/Users/gavin/Nutstore Files/.symlinks/坚果云/006-报价单/"
+        - "/Users/gavin/Nutstore Files/.symlinks/坚果云/007-工厂报价/"
+      events:
+        - "file_added"
+      file_patterns:
+        - "*.pdf"
+        - "*.xlsx"
+        - "*.docx"
+      enabled: true
+      trigger_rules: ["R002", "R009"]
+
+# ==================== Agent Actions ====================
+actions:
+  primary:
+    - name: run_reminder_check
+      description: "Execute the comprehensive reminder checking script"
+      command: "python3 check_reminders.py --mode single"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 300  # 5 minutes
+      retry_count: 3
+      retry_delay: 60  # 1 minute
+      dry_run: false
+
+  secondary:
+    - name: process_new_inquiries
+      description: "Process newly detected inquiry files"
+      command: "python3 process_new_inquiries.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 180
+      condition: "file_count > 0"
+      trigger_rules: ["R008"]
+
+    - name: update_drawing_classification
+      description: "Trigger drawing classification for new drawings"
+      command: "python3 classify_drawings.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 240
+      trigger_rules: ["R001"]
+
+    - name: generate_quote_analysis
+      description: "Generate quotation analysis report"
+      command: "python3 analyze_factory_quote_trends.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 180
+      trigger_rules: ["R009"]
+
+    - name: backup_system_data
+      description: "Perform system data backup"
+      command: "python3 backup_system.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 600
+      trigger_rules: ["R011"]
+
+  maintenance:
+    - name: cleanup_old_reminders
+      description: "Clean up old reminder records"
+      command: "python3 cleanup_reminders.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 120
+      schedule: "0 2 * * 0"  # 每周日凌晨2点
+
+    - name: update_statistics
+      description: "Update reminder system statistics"
+      command: "python3 update_reminder_stats.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 60
+      schedule: "0 23 * * *"  # 每天23:00
+
+# ==================== 规则详细配置 ====================
+rules:
+  # 高优先级规则
+  R001:
+    name: "客户图纸状态变更提醒"
+    priority: "高"
+    check_frequency: "每小时"
+    auto_process: true
+    notification_methods: ["email", "system"]
+    escalation:
+      enabled: true
+      delay_hours: 24
+      escalate_to: "engineering_manager"
+
+  R002:
+    name: "报价超时预警"
+    priority: "高"
+    check_frequency: "每15分钟"
+    auto_process: false
+    notification_methods: ["email", "sms"]
+    escalation:
+      enabled: true
+      normal_timeout_hours: 24
+      urgent_timeout_hours: 12
+      large_order_timeout_hours: 48
+
+  R003:
+    name: "质量异常报警"
+    priority: "高"
+    check_frequency: "实时"
+    auto_process: true
+    notification_methods: ["email", "sms", "system"]
+    escalation:
+      enabled: true
+      quality_threshold: 70
+      consecutive_failures: 3
+
+  R004:
+    name: "交付超期预警"
+    priority: "高"
+    check_frequency: "每天上午9点"
+    auto_process: false
+    notification_methods: ["email", "system"]
+    escalation:
+      enabled: true
+      advance_warning_days: 7
+      progress_delay_threshold: 20
+
+  R005:
+    name: "客户投诉提醒"
+    priority: "高"
+    check_frequency: "实时"
+    auto_process: true
+    notification_methods: ["email", "system"]
+    escalation:
+      enabled: true
+      response_timeout_hours: 2
+
+  # 中优先级规则
+  R006:
+    name: "批次生产计划提醒"
+    priority: "中"
+    check_frequency: "每小时"
+    auto_process: false
+    notification_methods: ["email", "system"]
+
+  R007:
+    name: "技术参数更新提醒"
+    priority: "中"
+    check_frequency: "每天上午10点"
+    auto_process: true
+    notification_methods: ["system"]
+
+  R008:
+    name: "客户跟进提醒"
+    priority: "中"
+    check_frequency: "每天上午11点"
+    auto_process: false
+    notification_methods: ["system"]
+
+  R009:
+    name: "报价分析报告提醒"
+    priority: "中"
+    check_frequency: "每天下午2点"
+    auto_process: true
+    notification_methods: ["email"]
+
+  R010:
+    name: "生产进度更新提醒"
+    priority: "中"
+    check_frequency: "每30分钟"
+    auto_process: true
+    notification_methods: ["system"]
+
+  # 低优先级规则
+  R011:
+    name: "数据备份提醒"
+    priority: "低"
+    check_frequency: "每天晚上8点"
+    auto_process: true
+    notification_methods: ["system"]
+
+  R012:
+    name: "月度统计报告提醒"
+    priority: "低"
+    check_frequency: "每月1号上午9点"
+    auto_process: true
+    notification_methods: ["email"]
+
+  R013:
+    name: "员工生日提醒"
+    priority: "低"
+    check_frequency: "每天上午8点"
+    auto_process: true
+    notification_methods: ["system"]
+
+  R014:
+    name: "合同到期提醒"
+    priority: "低"
+    check_frequency: "每周一上午10点"
+    auto_process: true
+    notification_methods: ["email"]
+
+  R015:
+    name: "库存预警提醒"
+    priority: "低"
+    check_frequency: "每天下午3点"
+    auto_process: true
+    notification_methods: ["system"]
+
+  R016:
+    name: "供应商评估提醒"
+    priority: "低"
+    check_frequency: "每季度最后一天"
+    auto_process: true
+    notification_methods: ["email"]
+
+  R017:
+    name: "设备维护提醒"
+    priority: "低"
+    check_frequency: "每周日上午9点"
+    auto_process: false
+    notification_methods: ["email", "system"]
+
+# ==================== Logging Configuration ====================
+logging:
+  level: INFO
+  file_path: "./data/processed/reminder_agent_log.json"
+  max_file_size: "10MB"
+  backup_count: 5
+  format: "json"
+
+  log_fields:
+    - timestamp
+    - trigger_type
+    - trigger_name
+    - action_executed
+    - execution_status
+    - duration_ms
+    - error_message
+    - processed_count
+
+# ==================== Error Handling and Retry Policy ====================
+error_handling:
+  max_retries: 3
+  retry_delay:
+    initial: 30  # seconds
+    max: 300     # 5 minutes
+    backoff_factor: 2
+
+  error_notifications:
+    enabled: true
+    recipients:
+      - "admin@company.com"
+    subject_prefix: "[Reminder Agent Alert]"
+
+  critical_errors:
+    - "database_connection_failed"
+    - "script_execution_failed"
+    - "file_system_error"
+
+  retry_on_errors:
+    - "timeout"
+    - "connection_failed"
+    - "temporary_unavailable"
+
+# ==================== Tools Allowed ====================
+tools_allowed:
+  FileSystem:
+    permissions: ["Read", "Write"]
+    allowed_paths:
+      - "/Users/gavin/Knowledge base"
+      - "/Users/gavin/Nutstore Files/.symlinks/坚果云/"
+
+  PythonExecution:
+    allowed_scripts:
+      - "check_reminders_enhanced.py"
+      - "process_new_inquiries.py"
+      - "classify_drawings.py"
+    sandbox_enabled: true
+
+  Bash:
+    allowed_commands:
+      - "python3"
+      - "ls"
+      - "find"
+    working_directory: "/Users/gavin/Knowledge base"
+
+# ==================== Resource Limits ====================
+resources:
+  max_memory: "512MB"
+  max_cpu_time: 600  # 10 minutes per execution
+  max_concurrent_actions: 3
+  max_file_size: "100MB"

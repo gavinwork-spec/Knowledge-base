@@ -1,0 +1,577 @@
+# GitHub自动同步Agent配置
+name: github_auto_sync_agent
+description: GitHub安全同步 - 自动将更新的知识安全推送到GitHub备份
+version: 1.0.0
+author: System Administrator
+created: 2025-11-06
+updated: 2025-11-06
+
+# ==================== 基础配置 ====================
+config:
+  # 数据库配置
+  database:
+    path: "knowledge_base.db"
+    connection_timeout: 30
+    max_connections: 3
+
+  # 执行配置
+  execution:
+    default_interval_minutes: 60
+    max_retry_attempts: 3
+    retry_delay_seconds: 120
+    batch_size: 10
+    timeout_seconds: 600
+
+  # 同步配置
+  sync:
+    default_interval_hours: 168  # 7天
+    max_file_size_mb: 50
+    compression_enabled: true
+    commit_batch_size: 20
+    push_timeout_seconds: 300
+    backup_retention_days: 90
+
+# ==================== Agent Triggers ====================
+triggers:
+  # 定时同步触发器
+  scheduled_sync:
+    - name: weekly_sunday_sync
+      description: "每周日晚上11:30自动同步"
+      cron: "30 23 * * 0"  # 每周日晚上11:30
+      timezone: "Asia/Shanghai"
+      enabled: true
+      priority: 1
+
+    - name: daily_quick_sync
+      description: "每天凌晨2点快速同步重要更新"
+      cron: "0 2 * * *"  # 每天凌晨2点
+      timezone: "Asia/Shanghai"
+      enabled: true
+      priority: 2
+
+    - name: monthly_deep_sync
+      description: "每月1号凌晨1点深度同步"
+      cron: "0 1 1 * *"  # 每月1号凌晨1点
+      timezone: "Asia/Shanghai"
+      enabled: true
+      priority: 3
+
+  # 数据变化触发器
+  data_monitor:
+    - name: knowledge_updates_sync
+      description: "知识库更新后触发同步"
+      trigger_condition: "knowledge_changes_detected"
+      check_interval_minutes: 60
+      cooldown_minutes: 30  # 防止频繁同步
+      enabled: true
+      priority: 4
+
+    - name: strategy_updates_sync
+      description: "策略建议更新后触发同步"
+      trigger_condition: "strategy_suggestions_changes > 0"
+      check_interval_minutes: 120
+      cooldown_minutes: 60
+      enabled: true
+      priority: 5
+
+  # 手动触发器
+  manual_trigger:
+    - name: immediate_sync
+      description: "立即同步所有更改"
+      trigger_condition: "manual_sync_requested"
+      enabled: true
+      priority: 1
+
+    - name: force_full_sync
+      description: "强制完全重新同步"
+      trigger_condition: "force_full_sync_requested"
+      enabled: true
+      priority: 1
+
+# ==================== Agent Actions ====================
+actions:
+  primary:
+    - name: perform_github_sync
+      description: "执行GitHub同步操作"
+      command: "python3 github_sync.py --mode auto"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 900  # 15 minutes
+      retry_count: 3
+      retry_delay: 300  # 5 minutes
+
+    - name: perform_quick_sync
+      description: "执行快速同步（仅重要文件）"
+      command: "python3 github_sync.py --mode quick"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 300  # 5 minutes
+      retry_count: 2
+      retry_delay: 180  # 3 minutes
+
+    - name: perform_deep_sync
+      description: "执行深度同步（完整检查）"
+      command: "python3 github_sync.py --mode deep"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 1800  # 30 minutes
+      retry_count: 3
+      retry_delay: 600  # 10 minutes
+
+  secondary:
+    - name: verify_sync_integrity
+      description: "验证同步完整性"
+      command: "python3 verify_sync_integrity.py"
+      working_directory: "/Users/github/Knowledge base"
+      timeout: 600  # 10 minutes
+      condition: "sync_completed"
+
+    -   name: generate_sync_report
+      description: "生成同步报告"
+      command: "python3 generate_sync_report.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 300  # 5 minutes
+      schedule: "0 12 * * *"  # 每天12点
+
+    - name: cleanup_old_backups
+      description: "清理旧备份文件"
+      command: "python3 cleanup_old_backups.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 120  # 2 minutes
+      schedule: "0 3 * * 0"  # 每周日凌晨3点
+
+# ==================== 同步规则配置 ====================
+sync_rules:
+  # 包含规则 - 这些文件/目录会被包含在同步中
+  inclusion_rules:
+    important_files:
+      - "knowledge_base_schema.sql"
+      - "setup_knowledge_models.py"
+      - "build_embeddings.py"
+      - "quote_analysis_agent.py"
+      "github_migration.py"
+      "verify_knowledge_system.py"
+      "generate_quote_strategies.py"
+      "learn_from_updates.py"
+      "api_server_knowledge.py"
+      "api_chat_interface.py"
+
+    documentation_files:
+      - "*.md"
+      - "*.txt"
+      - "README*"
+      - "USAGE_GUIDE*"
+      "CHANGELOG*"
+
+    script_files:
+      - "*.py"
+      - "*.yaml"
+      - "*.json"
+
+    data_files:
+      - "knowledge_data.json"
+      "embedding_index*"
+      "strategy_*"
+
+    config_files:
+      - "config.json"
+      - "settings.json"
+
+  # 排除规则 - 这些文件/目录永远不会被同步
+  exclusion_rules:
+    sensitive_directories:
+      - "/Users/gavin/Nutstore Files/.symlinks/坚果云/002-客户中/"
+      - "/Users/gavin/Nutstore Files/.symlinks/坚果云/005-询盘询价和/"
+      - "data/raw/"
+      - "data/temp/"
+      - "data/sensitive/"
+      - "backup/"
+      - "backups/"
+
+    sensitive_files:
+      - "*customer*"
+      - "*client*"
+      - "*contact*"
+      - "*personal*"
+      - "*private*"
+      - "*confidential*"
+      - "*secret*"
+      - "*password*"
+      - "*token*"
+      - "*key*"
+
+    database_files:
+      - "*.db"
+      - "*.sqlite*"
+      - "*.sqlite3"
+      - "knowledge_base.db*"
+
+    log_files:
+      - "*.log"
+      - "*.log.*"
+      "logs/"
+
+    system_files:
+      - ".env*"
+      - ".DS_Store"
+      - "Thumbs.db"
+      - "*.tmp"
+      - "*.temp"
+      - "*~"
+
+    cache_files:
+      - "__pycache__"
+      "*.pyc"
+      "*.pyo"
+      ".pytest_cache/"
+      "node_modules/"
+
+    ide_files:
+      - ".vscode/"
+      - ".idea/"
+      "*.swp"
+      "*.swo"
+
+  # 内容过滤规则
+  content_filters:
+    sensitive_data_patterns:
+      - "phone"
+      - "email"
+      - "address"
+      "contact"
+      "身份证"
+      "护照"
+      "银行"
+      "账号"
+      "credit card"
+      "social security"
+      "personal information"
+
+    price_information:
+      - "￥"
+      - "¥"
+      - "RMB"
+      "USD"
+      "EUR"
+      "价格"
+      "报价"
+      "成本"
+      "费用"
+
+    internal_identifiers:
+      - "内部"
+      - "confidential"
+      "机密"
+      "仅限内部"
+
+# ==================== 同步数据源配置 ====================
+data_sources:
+  # 知识库数据
+  knowledge_base:
+    entities:
+      - table: "knowledge_entries"
+        fields: ["name", "description", "entity_type", "created_at"]
+        where_conditions: "entity_type IN ('product', 'specification', 'material')"
+        max_age_days: 365
+
+    entity_types:
+      table: "entity_types"
+        fields: ["name", "display_name", "description", "color", "icon"]
+        where_conditions: "is_active = 1"
+
+    strategy_suggestions:
+      table: "strategy_suggestions"
+      fields: ["suggestion_type", "title", "description", "confidence_score"]
+      where_conditions: "status IN ('pending', 'reviewed')"
+        max_age_days: 90
+
+  # 配置和脚本数据
+    configurations:
+      files:
+        - "parse_documents_agent.yaml"
+        - "quote_strategy_agent.yaml"
+        - "learn_from_updates_agent.yaml"
+        - "github_auto_sync_agent.yaml"
+
+      scripts:
+        - "setup_knowledge_models.py"
+        - "build_embeddings.py"
+        - "quote_analysis_agent.py"
+        - "generate_quote_strategies.py"
+        - "learn_from_updates.py"
+        - "api_server_knowledge.py"
+        "api_chat_interface.py"
+        "github_migration.py"
+
+  # 生成的报告数据
+    reports:
+      analysis_reports:
+        pattern: "*_report.json"
+        location: "data/processed/"
+        max_age_days: 30
+
+      learning_stats:
+        file: "learning_stats.json"
+        location: "data/processed/"
+
+      strategy_stats:
+        file: "strategy_generation_stats.json"
+        location: "data/processed/"
+
+      sync_logs:
+        file: "github_sync_log.json"
+        location: "data/processed/"
+
+# ==================== 同步输出配置 ====================
+output:
+  # GitHub仓库配置
+  github_repository:
+    path: "knowledge-github-backup"
+    remote_name: "origin"
+    branch: "main"
+    commit_message_template: "Knowledge base auto-sync - {timestamp}"
+
+  # 同步报告
+  sync_report:
+    enabled: true
+    output_format: "markdown"
+    schedule: "weekly"
+    sections:
+      - "sync_summary"
+      - "files_synced"
+      - "changes_detected"
+      "security_measures_applied"
+      "issues_encountered"
+      "recommendations"
+
+  # 同步日志
+  sync_log:
+    enabled: true
+    file_path: "./data/processed/github_sync_log.json"
+    max_file_size: "20MB"
+    log_level: "INFO"
+    format: "json"
+    retention_days: 90
+
+  # 统计数据
+  sync_statistics:
+    enabled: true
+    update_interval_minutes: 60
+    metrics:
+      - "files_synced_count"
+      - "sync_duration_seconds"
+      - "commit_count"
+      - "error_count"
+      - "data_size_synced"
+
+# ==================== 安全和隐私保护 ====================
+security:
+  # 数据脱敏规则
+  data_sanitization:
+    enabled: true
+    methods:
+      - "text_replacement"  # 文本替换
+      - "pattern_removal"   # 模式移除
+      - "field_filtering"  # 字段过滤
+
+    sanitization_rules:
+      customer_data:
+        fields: ["name", "contact", "phone", "email"]
+        replacement: "[客户信息已脱敏]"
+        confidence: 0.9
+
+      price_data:
+        fields: ["price", "cost", "amount", "budget"]
+        replacement: "[价格信息已脱敏]"
+        confidence: 0.95
+
+      personal_identifiers:
+        patterns:
+          - "\\d{15,17}"  # 身份证号
+          - "\\d{11}"     # 手机号
+          - "[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}"  # 邮箱
+        replacement: "[个人信息已脱敏]"
+        confidence: 0.95
+
+  # 文件完整性验证
+    integrity_checks:
+      checksum_verification: true
+      size_validation: true
+      timestamp_validation: true
+      content_hashing: true
+
+  # 访问控制
+    access_control:
+      required_permissions: ["read", "write"]
+      allowed_users: ["system", "backup_service"]
+      audit_trail: true
+
+# ==================== 错误处理和重试策略 ====================
+error_handling:
+  max_retries: 3
+  retry_delay:
+    initial: 60  # seconds
+    max: 300     # 5 minutes
+    backoff_factor: 2
+
+  error_notifications:
+    enabled: true
+    recipients:
+      - "admin@company.com"
+    subject_prefix: "[GitHub Sync Alert]"
+
+  critical_errors:
+    - "github_authentication_failed"
+    - "repository_access_denied"
+    "disk_space_full"
+    "network_timeout"
+    "data_corruption_detected"
+
+  retry_on_errors:
+    - "timeout"
+    "temporary_unavailable"
+    "network_error"
+    "rate_limit_exceeded"
+
+  skip_on_errors:
+    - "access_denied"
+    - "file_not_found"
+    "permission_denied"
+    "disk_full"
+
+# ==================== 工具权限配置 ====================
+tools_allowed:
+  FileSystem:
+    permissions: ["Read", "Write"]
+    allowed_paths:
+      - "/Users/gavin/Knowledge base"
+      - "/Users/gavin/Knowledge base/data"
+      - "/Users/gavin/Knowledge base/github-frontend"
+      - "/Users/gavin/Knowledge base/knowledge-github-backup"
+
+  GitOperations:
+    allowed_operations: ["clone", "add", "commit", "push", "pull", "log", "status"]
+    allowed_repositories:
+      - "knowledge-github-backup"
+
+    max_execution_time: 300  # 5 minutes
+    credentials_file: "~/.git-credentials"
+
+  PythonExecution:
+    allowed_scripts:
+      - "github_sync.py"
+      - "verify_sync_integrity.py"
+      - "generate_sync_report.py"
+      - "cleanup_old_backups.py"
+    sandbox_enabled: true
+    max_execution_time: 1800  # 30 minutes
+
+  SQLiteAccess:
+    allowed_databases:
+      - "knowledge_base.db"
+    allowed_operations: ["Read", "Query"]
+    max_query_time: 300  # 5 minutes
+
+  TextProcessing:
+    enabled: true
+    libraries:
+      - "json"
+      - "re"
+      - "hashlib"
+      - "datetime"
+      - "pathlib"
+      - "sqlite3"
+
+  DataValidation:
+    enabled: true
+    validation_types:
+      - "file_size_limits"
+      - "content_scanning"
+      - "pattern_matching"
+      - "schema_validation"
+
+# ==================== 资源限制 ====================
+resources:
+  max_memory: "1GB"
+  max_cpu_time: 1800  # 30 minutes per execution
+  max_concurrent_actions: 2
+  max_file_size: "100MB"
+  max_total_sync_size: "500MB"
+
+# ==================== 同步质量保证 ====================
+quality_assurance:
+  # 预同步检查
+  pre_sync_checks:
+    - repository_status: true
+    - disk_space_check: true
+    - file_permissions_check: true
+    - git_configuration_check: true
+
+  # 后同步验证
+  post_sync_validation:
+    - commit_verification: true
+    - remote_sync_check: true
+    - file_count_comparison: true
+    - checksum_validation: true
+
+  # 性能监控
+  performance_monitoring:
+    sync_duration_tracking: true
+    file_processing_speed: true
+    network_bandwidth_usage: true
+    error_rate_tracking: true
+
+  # 质量指标
+  quality_metrics:
+    sync_success_rate: 0.95
+    max_sync_duration_minutes: 30
+    max_error_rate: 0.05
+    data_integrity_score: 1.0
+
+# ==================== 监控和告警 ====================
+monitoring:
+  # 监控指标
+  metrics:
+    - "sync_frequency"
+    - "sync_success_rate"
+    - "average_sync_duration"
+    - "files_per_sync"
+    - "data_volume_synced"
+    - "error_rate"
+
+  # 告警阈值
+  alert_thresholds:
+    sync_failure_rate: 0.1  # 10%
+    sync_duration_minutes: 60   # 60分钟
+    error_count: 5
+    consecutive_failures: 3
+
+  # 告警通知
+  alert_channels:
+    - email: ["admin@company.com"]
+    - webhook: ["https://hooks.slack.com/your-webhook-url"]
+
+# ==================== 合规性要求 ====================
+compliance:
+  # 数据保护合规
+    data_protection:
+      gdpr_compliance: true
+      data_minimization: true
+      purpose_limitation: true
+      storage_limitation: true
+
+    privacy_policy:
+      anonymization_required: true
+      consent_management: true
+      data_retention_policy: true
+      user_rights: true
+
+  # 安全合规
+    security_standards:
+      encryption_at_rest: true
+      secure_communication: true
+      access_logging: true
+      vulnerability_scanning: true
+
+    backup_policy:
+      regular_backups: true
+      offsite_storage: true
+      backup_encryption: true
+      recovery_testing: true

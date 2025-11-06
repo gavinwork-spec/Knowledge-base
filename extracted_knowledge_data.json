@@ -1,0 +1,106 @@
+{
+  "export_timestamp": "2025-11-06T14:54:46.795637",
+  "version": "1.0.0",
+  "entity_types": [
+    {
+      "name": "customer",
+      "display_name": "客户",
+      "description": "客户信息和联系资料",
+      "color": "#28a745",
+      "icon": "users"
+    },
+    {
+      "name": "quote",
+      "display_name": "报价",
+      "description": "报价单和价格信息",
+      "color": "#dc3545",
+      "icon": "dollar-sign"
+    },
+    {
+      "name": "drawing",
+      "display_name": "图纸",
+      "description": "技术图纸和设计文件",
+      "color": "#17a2b8",
+      "icon": "drafting-compass"
+    },
+    {
+      "name": "factory",
+      "display_name": "工厂",
+      "description": "工厂和供应商信息",
+      "color": "#fd7e14",
+      "icon": "industry"
+    },
+    {
+      "name": "product",
+      "display_name": "产品",
+      "description": "产品规格和技术参数",
+      "color": "#6f42c1",
+      "icon": "box"
+    },
+    {
+      "name": "inquiry",
+      "display_name": "询价",
+      "description": "客户询价和需求信息",
+      "color": "#20c997",
+      "icon": "question-circle"
+    },
+    {
+      "name": "contract",
+      "display_name": "合同",
+      "description": "合同协议和商务文件",
+      "color": "#e83e8c",
+      "icon": "file-text"
+    },
+    {
+      "name": "material",
+      "display_name": "材料",
+      "description": "材料规格和属性信息",
+      "color": "#6c757d",
+      "icon": "layers"
+    },
+    {
+      "name": "specification",
+      "display_name": "规格",
+      "description": "技术规格书和标准",
+      "color": "#343a40",
+      "icon": "clipboard-data"
+    }
+  ],
+  "knowledge_entries": [
+    {
+      "id": 2,
+      "entity_type": "product",
+      "name": "M8不锈钢螺栓",
+      "description": "标准六角头螺栓，材质304不锈钢，强度等级8.8级",
+      "created_at": "2025-11-06 06:44:10",
+      "updated_at": "2025-11-06 06:44:10",
+      "attributes": {
+        "material": "304不锈钢",
+        "standard": "GB/T 5782",
+        "strength": "8.8级",
+        "specification": "M8x20"
+      }
+    }
+  ],
+  "nlp_entities": [],
+  "strategy_suggestions": [
+    {
+      "suggestion_type": "cost_optimization",
+      "title": "材料成本优化 - 不锈钢",
+      "impact_level": "medium",
+      "confidence_score": 1.0
+    },
+    {
+      "suggestion_type": "cost_optimization",
+      "title": "材料成本优化 - 202",
+      "impact_level": "medium",
+      "confidence_score": 1.0
+    }
+  ],
+  "statistics": {
+    "total_entity_types": 9,
+    "total_knowledge_entries": 1,
+    "total_nlp_entities": 0,
+    "total_strategy_suggestions": 2
+  }
+}

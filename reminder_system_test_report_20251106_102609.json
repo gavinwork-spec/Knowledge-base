@@ -1,0 +1,112 @@
+{
+  "test_summary": {
+    "total_tests": 9,
+    "passed_tests": 7,
+    "failed_tests": 2,
+    "success_rate": 77.8,
+    "overall_status": "FAIL"
+  },
+  "test_results": [
+    {
+      "test_name": "API Health Check",
+      "success": true,
+      "message": "API服务器正常运行，版本: 2.0.0",
+      "details": {
+        "status": "healthy",
+        "database_connected": true
+      },
+      "timestamp": "2025-11-06T10:26:02.234172"
+    },
+    {
+      "test_name": "Database Connection",
+      "success": true,
+      "message": "数据库连接正常，活跃规则数: 12",
+      "details": {
+        "tables": [
+          "reminder_rules",
+          "reminder_records"
+        ],
+        "active_rules": 12
+      },
+      "timestamp": "2025-11-06T10:26:02.234608"
+    },
+    {
+      "test_name": "Dashboard API",
+      "success": true,
+      "message": "仪表板数据获取成功",
+      "details": {
+        "rules_count": 12,
+        "today_reminders": 0,
+        "system_status": "healthy"
+      },
+      "timestamp": "2025-11-06T10:26:02.236505"
+    },
+    {
+      "test_name": "Reminder Records API",
+      "success": true,
+      "message": "获取提醒记录成功，记录数: 0",
+      "details": {
+        "total_records": 0,
+        "current_page": 1
+      },
+      "timestamp": "2025-11-06T10:26:02.237910"
+    },
+    {
+      "test_name": "Reminder Rules API",
+      "success": true,
+      "message": "获取提醒规则成功，规则数: 5",
+      "details": {
+        "categories": [
+          "sales",
+          "drawing",
+          "customer"
+        ]
+      },
+      "timestamp": "2025-11-06T10:26:02.239590"
+    },
+    {
+      "test_name": "Reminder Checker Script",
+      "success": true,
+      "message": "提醒检查脚本执行成功",
+      "details": {
+        "stdout": "\n============================================================\n📊 提醒检查总结\n============================================================\n📅 今日提醒: 0 个\n⏳ 待处理: 0 个\n📈 本周总计: 0 个\n✅ 已完成: 0 个\n⏰ 检查时间: 2025-11-06 10:26:02\n============================================================\n"
+      },
+      "timestamp": "2025-11-06T10:26:02.278716"
+    },
+    {
+      "test_name": "Manual Trigger",
+      "success": true,
+      "message": "手动触发成功，执行ID: MANUAL_20251106_102602_WEEKLY_SYSTEM_BACKUP",
+      "details": {
+        "rule_id": "WEEKLY_SYSTEM_BACKUP",
+        "execution_id": "MANUAL_20251106_102602_WEEKLY_SYSTEM_BACKUP"
+      },
+      "timestamp": "2025-11-06T10:26:02.281841"
+    },
+    {
+      "test_name": "Manual Trigger",
+      "success": false,
+      "message": "手动触发响应异常: 500",
+      "details": {},
+      "timestamp": "2025-11-06T10:26:02.283657"
+    },
+    {
+      "test_name": "Data Flow Test",
+      "success": false,
+      "message": "数据流测试失败，未创建新记录",
+      "details": {
+        "initial_count": 1,
+        "final_count": 1
+      },
+      "timestamp": "2025-11-06T10:26:04.289393"
+    },
+    {
+      "test_name": "Error Handling",
+      "success": false,
+      "message": "错误处理测试失败: HTTPConnectionPool(host='localhost', port=8001): Read timed out. (read timeout=5)",
+      "details": {},
+      "timestamp": "2025-11-06T10:26:09.293624"
+    }
+  ],
+  "test_time": "2025-11-06T10:26:09.294776"
+}

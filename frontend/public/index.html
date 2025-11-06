@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理系统 - 提醒中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .nav-tabs {
+            background: white;
+            padding: 0 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: #667eea;
+        }
+
+        .nav-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .priority-high {
+            color: #dc3545;
+            font-weight: 600;
+        }
+
+        .priority-medium {
+            color: #ffc107;
+            font-weight: 600;
+        }
+
+        .priority-low {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🔔 知识库管理系统 - 提醒中心</h1>
+    </header>
+
+    <nav class="nav-tabs">
+        <div class="nav-tab active" onclick="switchTab('reminders')">提醒中心</div>
+        <div class="nav-tab" onclick="switchTab('statistics')">统计视图</div>
+        <div class="nav-tab" onclick="switchTab('analysis')">数据分析</div>
+    </nav>
+
+    <div class="container">
+        <!-- 提醒中心标签页 -->
+        <div id="reminders" class="tab-content active">
+            <!-- 系统健康状态 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">系统健康状态</h3>
+                    <span id="system-status" class="status-badge status-healthy">检查中...</span>
+                </div>
+                <div id="system-health-content">
+                    <div class="loading">正在加载系统健康信息...</div>
+                </div>
+            </div>
+
+            <!-- 提醒规则统计 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div id="total-rules" class="stat-value">-</div>
+                    <div class="stat-label">总规则数</div>
+                </div>
+                <div class="stat-card">
+                    <div id="active-rules" class="stat-value">-</div>
+                    <div class="stat-label">活跃规则</div>
+                </div>
+                <div class="stat-card">
+                    <div id="today-reminders" class="stat-value">-</div>
+                    <div class="stat-label">今日提醒</div>
+                </div>
+                <div class="stat-card">
+                    <div id="success-rate" class="stat-value">-</div>
+                    <div class="stat-label">成功率</div>
+                </div>
+            </div>
+
+            <!-- 提醒规则列表 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">提醒规则</h3>
+                    <button class="btn btn-primary btn-sm" onclick="refreshRules()">刷新</button>
+                </div>
+                <div id="rules-content">
+                    <div class="loading">正在加载提醒规则...</div>
+                </div>
+            </div>
+
+            <!-- 最近活动 -->
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">最近活动</h3>
+                    <button class="btn btn-primary btn-sm" onclick="refreshActivity()">刷新</button>
+                </div>
+                <div id="activity-content">
+                    <div class="loading">正在加载活动记录...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 统计视图标签页 -->
+        <div id="statistics" class="tab-content">
+            <!-- 图纸分类统计 -->
+            <div class="chart-container">
+                <div class="card-header">
+                    <h3 class="card-title">图纸分类分布</h3>
+                    <button class="btn btn-primary btn-sm" onclick="refreshStatistics()">刷新</button>
+                </div>
+                <div id="drawing-stats-content">
+                    <div class="loading">正在加载图纸统计...</div>
+                </div>
+            </div>
+
+            <!-- 客户状态统计 -->
+            <div class="chart-container">
+                <div class="card-header">
+                    <h3 class="card-title">客户状态分布</h3>
+                </div>
+                <div id="customer-stats-content">
+                    <div class="loading">正在加载客户统计...</div>
+                </div>
+            </div>
+
+            <!-- 工厂报价统计 -->
+            <div class="chart-container">
+                <div class="card-header">
+                    <h3 class="card-title">工厂报价趋势</h3>
+                </div>
+                <div id="factory-stats-content">
+                    <div class="loading">正在加载工厂统计...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据分析标签页 -->
+        <div id="analysis" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">数据质量分析</h3>
+                </div>
+                <div id="quality-analysis-content">
+                    <div class="loading">正在加载数据质量分析...</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">趋势分析</h3>
+                </div>
+                <div id="trend-analysis-content">
+                    <div class="loading">正在加载趋势分析...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 刷新按钮 -->
+    <button class="refresh-btn" onclick="refreshAll()" title="刷新所有数据">
+        🔄
+    </button>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api/v1';
+
+        // 标签页切换
+        function switchTab(tabName) {
+            // 移除所有active类
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 添加active类到当前标签
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // 加载对应数据
+            if (tabName === 'reminders') {
+                loadRemindersData();
+            } else if (tabName === 'statistics') {
+                loadStatisticsData();
+            } else if (tabName === 'analysis') {
+                loadAnalysisData();
+            }
+        }
+
+        // 加载提醒数据
+        async function loadRemindersData() {
+            try {
+                // 加载仪表板数据
+                const dashboardResponse = await fetch(`${API_BASE}/reminders/dashboard`);
+                const dashboardData = await dashboardResponse.json();
+
+                if (dashboardData.success) {
+                    updateRemindersDashboard(dashboardData.data);
+                }
+
+                // 加载规则列表
+                const rulesResponse = await fetch(`${API_BASE}/reminders/rules?limit=10`);
+                const rulesData = await rulesResponse.json();
+
+                if (rulesData.success) {
+                    updateRulesList(rulesData.data.rules);
+                }
+
+            } catch (error) {
+                console.error('加载提醒数据失败:', error);
+                showError('加载提醒数据失败，请检查API服务器是否正常运行');
+            }
+        }
+
+        // 更新提醒仪表板
+        function updateRemindersDashboard(data) {
+            // 更新系统健康状态
+            const systemHealth = data.system_health;
+            const statusElement = document.getElementById('system-status');
+            const healthContent = document.getElementById('system-health-content');
+
+            if (systemHealth.status === 'healthy') {
+                statusElement.className = 'status-badge status-healthy';
+                statusElement.textContent = '系统正常';
+                healthContent.innerHTML = `
+                    <p><strong>失败率:</strong> ${systemHealth.failure_rate}%</p>
+                    <p><strong>运行时间:</strong> ${systemHealth.uptime}</p>
+                    <p><strong>最后检查:</strong> ${new Date(systemHealth.last_check).toLocaleString()}</p>
+                `;
+            } else {
+                statusElement.className = 'status-badge status-warning';
+                statusElement.textContent = '需要关注';
+                healthContent.innerHTML = `
+                    <p><strong>失败率:</strong> ${systemHealth.failure_rate}%</p>
+                    <p><strong>运行时间:</strong> ${systemHealth.uptime}</p>
+                    <p><strong>建议:</strong> 请检查系统日志</p>
+                `;
+            }
+
+            // 更新统计数据
+            document.getElementById('total-rules').textContent = data.rules.total_rules;
+            document.getElementById('active-rules').textContent = data.rules.active_rules;
+            document.getElementById('today-reminders').textContent = data.today.total_reminders;
+
+            const successRate = data.today.total_reminders > 0
+                ? Math.round((data.today.completed_reminders / data.today.total_reminders) * 100)
+                : 0;
+            document.getElementById('success-rate').textContent = successRate + '%';
+
+            // 更新最近活动
+            updateActivityList(data.recent_activity);
+        }
+
+        // 更新规则列表
+        function updateRulesList(rules) {
+            const content = document.getElementById('rules-content');
+
+            if (rules.length === 0) {
+                content.innerHTML = '<p>暂无提醒规则</p>';
+                return;
+            }
+
+            const table = `
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>规则ID</th>
+                            <th>规则名称</th>
+                            <th>优先级</th>
+                            <th>触发次数</th>
+                            <th>最后触发</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rules.map(rule => `
+                            <tr>
+                                <td>${rule.rule_id}</td>
+                                <td>${rule.name}</td>
+                                <td><span class="priority-${rule.priority === 1 ? 'high' : rule.priority === 2 ? 'medium' : 'low'}">
+                                    ${rule.priority === 1 ? '高' : rule.priority === 2 ? '中' : '低'}
+                                </span></td>
+                                <td>${rule.trigger_count || 0}</td>
+                                <td>${rule.last_triggered ? new Date(rule.last_triggered).toLocaleString() : '从未'}</td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="triggerRule('${rule.rule_id}')">
+                                        触发
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            content.innerHTML = table;
+        }
+
+        // 更新活动列表
+        function updateActivityList(activities) {
+            const content = document.getElementById('activity-content');
+
+            if (activities.length === 0) {
+                content.innerHTML = '<p>暂无最近活动</p>';
+                return;
+            }
+
+            const list = activities.map(activity => `
+                <div style="padding: 0.75rem 0; border-bottom: 1px solid #e0e0e0;">
+                    <strong>${activity.rule_name}</strong>
+                    <br>
+                    <small style="color: #666;">
+                        ${activity.execution_id} -
+                        ${new Date(activity.triggered_at).toLocaleString()} -
+                        通知: ${activity.notification_count || 0}个
+                    </small>
+                </div>
+            `).join('');
+
+            content.innerHTML = list;
+        }
+
+        // 加载统计数据
+        async function loadStatisticsData() {
+            try {
+                // 加载图纸分类统计
+                const drawingsResponse = await fetch(`${API_BASE}/statistics/drawings/by_category`);
+                const drawingsData = await drawingsResponse.json();
+
+                if (drawingsData.success) {
+                    updateDrawingStats(drawingsData.data);
+                }
+
+                // 加载客户统计
+                const customersResponse = await fetch(`${API_BASE}/statistics/customers/by_status`);
+                const customersData = await customersResponse.json();
+
+                if (customersResponse.success) {
+                    updateCustomerStats(customersData.data);
+                }
+
+                // 加载工厂报价趋势
+                const trendsResponse = await fetch(`${API_BASE}/trends/factory_quotes`);
+                const trendsData = await trendsResponse.json();
+
+                if (trendsData.success) {
+                    updateFactoryStats(trendsData.data);
+                }
+
+            } catch (error) {
+                console.error('加载统计数据失败:', error);
+                showError('加载统计数据失败，请检查API服务器是否正常运行');
+            }
+        }
+
+        // 更新图纸统计
+        function updateDrawingStats(data) {
+            const content = document.getElementById('drawing-stats-content');
+            const summary = data.summary;
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div><strong>总图纸数:</strong> ${summary.total_drawings}</div>
+                    <div><strong>已分类:</strong> ${summary.classified_drawings}</div>
+                    <div><strong>分类率:</strong> ${summary.classification_rate}%</div>
+                    <div><strong>日期范围:</strong> ${summary.date_range.from} 至 ${summary.date_range.to}</div>
+                </div>
+                <h4 style="margin-top: 1rem;">分类分布:</h4>
+                <div style="margin-top: 0.5rem;">
+                    ${data.categories.map(cat => `
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                            <strong>${cat.product_category}:</strong> ${cat.count} (${cat.percentage}%)
+                            <br>
+                            <small>标准件: ${cat.standard_count}, 定制件: ${cat.custom_count}, 平均置信度: ${(cat.avg_confidence * 100).toFixed(1)}%</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 更新客户统计
+        function updateCustomerStats(data) {
+            const content = document.getElementById('customer-stats-content');
+            const summary = data.summary;
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div><strong>总客户数:</strong> ${summary.total_customers}</div>
+                    <div><strong>活跃客户:</strong> ${summary.active_customers}</div>
+                    <div><strong>潜在客户:</strong> ${summary.potential_customers}</div>
+                    <div><strong>平均图纸数:</strong> ${summary.avg_drawings_per_customer}</div>
+                </div>
+                <h4 style="margin-top: 1rem;">状态分布:</h4>
+                <div style="margin-top: 0.5rem;">
+                    ${data.status_distribution.map(status => `
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                            <strong>${status.customer_status}:</strong> ${status.count} (${status.percentage}%)
+                            <br>
+                            <small>平均图纸: ${status.avg_drawings}, 覆盖国家: ${status.countries}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 更新工厂统计
+        function updateFactoryStats(data) {
+            const content = document.getElementById('factory-stats-content');
+            const summary = data.summary;
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div><strong>总报价数:</strong> ${summary.total_quotes}</div>
+                    <div><strong>工厂数:</strong> ${summary.total_factories}</div>
+                    <div><strong>价格趋势:</strong> ${summary.overall_price_trend > 0 ? '+' : ''}${summary.overall_price_trend}%</div>
+                    <div><strong>数据范围:</strong> ${summary.date_range.from} 至 ${summary.date_range.to}</div>
+                </div>
+                <h4 style="margin-top: 1rem;">工厂表现:</h4>
+                <div style="margin-top: 0.5rem;">
+                    ${data.factory_performance.map(factory => `
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                            <strong>${factory.factory_name}:</strong> 平均价格 ${factory.avg_price}
+                            <br>
+                            <small>报价数: ${factory.total_quotes}, 频率: ${factory.quote_frequency}/月</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 加载分析数据
+        async function loadAnalysisData() {
+            try {
+                // 加载数据质量
+                const qualityResponse = await fetch(`${API_BASE}/quality/overview`);
+                const qualityData = await qualityResponse.json();
+
+                if (qualityData.success) {
+                    updateQualityAnalysis(qualityData.data);
+                }
+
+                // 这里可以添加更多分析数据加载
+
+            } catch (error) {
+                console.error('加载分析数据失败:', error);
+                showError('加载分析数据失败，请检查API服务器是否正常运行');
+            }
+        }
+
+        // 更新数据质量分析
+        function updateQualityAnalysis(data) {
+            const content = document.getElementById('quality-analysis-content');
+
+            content.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                    <div>
+                        <h4>总体评分</h4>
+                        <div style="font-size: 2rem; font-weight: bold; color: ${data.overall_score >= 80 ? '#28a745' : data.overall_score >= 60 ? '#ffc107' : '#dc3545'};">
+                            ${data.overall_score}/100
+                        </div>
+                        <div>等级: <strong>${data.overall_grade}</strong></div>
+                    </div>
+                </div>
+                <h4 style="margin-top: 1rem;">组件评分:</h4>
+                <div style="margin-top: 0.5rem;">
+                    ${Object.entries(data.component_scores).map(([component, score]) => `
+                        <div style="padding: 0.5rem 0; border-bottom: 1px solid #f0f0f0;">
+                            <strong>${component}:</strong> ${score.score}/100 (${score.grade})
+                            <br>
+                            <small>完整性: ${score.completeness}%, 准确性: ${score.accuracy || 'N/A'}%</small>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // 触发规则
+        async function triggerRule(ruleId) {
+            try {
+                const response = await fetch(`${API_BASE}/reminders/trigger`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rule_id: ruleId })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert(`规则 ${ruleId} 触发成功！`);
+                    loadRemindersData(); // 刷新数据
+                } else {
+                    alert(`触发失败: ${result.error?.message || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('触发规则失败:', error);
+                alert('触发规则失败，请检查网络连接');
+            }
+        }
+
+        // 刷新函数
+        function refreshAll() {
+            const activeTab = document.querySelector('.tab-content.active').id;
+            if (activeTab === 'reminders') {
+                loadRemindersData();
+            } else if (activeTab === 'statistics') {
+                loadStatisticsData();
+            } else if (activeTab === 'analysis') {
+                loadAnalysisData();
+            }
+        }
+
+        function refreshRules() {
+            loadRemindersData();
+        }
+
+        function refreshActivity() {
+            loadRemindersData();
+        }
+
+        function refreshStatistics() {
+            loadStatisticsData();
+        }
+
+        // 显示错误信息
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            document.querySelector('.container').insertBefore(errorDiv, document.querySelector('.container').firstChild);
+
+            // 3秒后自动移除错误信息
+            setTimeout(() => {
+                if (errorDiv.parentNode) {
+                    errorDiv.parentNode.removeChild(errorDiv);
+                }
+            }, 3000);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadRemindersData();
+        });
+    </script>
+</body>
+</html>

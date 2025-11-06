@@ -1,0 +1,74 @@
+name: classify_drawings_agent
+description: 自动图纸分类Agent，定期执行图纸分类任务
+version: 1.0
+
+# 触发条件
+triggers:
+  # 每月第1天00:00自动执行
+  schedule:
+    cron: "0 0 1 * *"
+    timezone: "Asia/Shanghai"
+
+  # 新图纸导入后触发（当图纸数量增加超过10个时）
+  data_change:
+    table: drawings
+    condition: "COUNT(*) > (SELECT COUNT(*) FROM drawings WHERE is_classified = 1) + 10"
+
+# 执行的脚本
+actions:
+  - type: python_script
+    script: classify_drawings.py
+    args: [--report]
+    working_directory: "/Users/gavin/Knowledge base"
+
+  # 分类完成后运行统计导出
+  - type: python_script
+    script: export_statistics.py
+    condition: "previous_success"
+    working_directory: "/Users/gavin/Knowledge base"
+
+# 输出配置
+outputs:
+  log_file: "./data/processed/classify_drawings_log.json"
+  report_dir: "./data/processed/"
+
+  # 记录执行结果
+  result_format:
+    timestamp: "{{execution_time}}"
+    success: "{{success}}"
+    classified_count: "{{output.classified}}"
+    total_count: "{{output.total_processed}}"
+    classification_rate: "{{output.classification_rate}}"
+
+# 通知配置
+notifications:
+  on_success:
+    - type: log
+      message: "图纸分类完成: {{output.classified}}/{{output.total_processed}} ({{output.classification_rate}}%)"
+
+  on_failure:
+    - type: log
+      level: error
+      message: "图纸分类失败: {{error}}"
+
+    - type: email
+      recipients: ["admin@example.com"]
+      subject: "图纸分类任务失败"
+      body: "执行时间: {{execution_time}}\n错误信息: {{error}}"
+
+# 重试配置
+retry:
+  max_attempts: 3
+  backoff: "exponential"
+  max_delay: 300  # 5分钟
+
+# 资源限制
+resources:
+  max_memory: "512MB"
+  max_cpu_time: 300  # 5分钟
+
+# 工具权限
+allowed_tools:
+  - FileSystem(Read, Write)
+  - PythonExecution
+  - Database(Read, Write)
