@@ -1,0 +1,404 @@
+# 智能推荐Agent配置
+name: recommendation_agent
+description: 智能推荐系统 - 基于历史数据和市场分析，为询盘提供最优产品建议和价格区间推荐
+version: 1.0.0
+author: System Administrator
+created: 2025-11-06
+updated: 2025-11-06
+
+# ==================== 基础配置 ====================
+config:
+  # 数据库配置
+  database:
+    path: "knowledge_base.db"
+    connection_timeout: 30
+    max_connections: 5
+
+  # 执行配置
+  execution:
+    default_interval_minutes: 60
+    max_retry_attempts: 3
+    retry_delay_seconds: 60
+    batch_size: 20
+    timeout_seconds: 1200
+
+  # 推荐算法配置
+  recommendation:
+    similarity_threshold: 0.7      # 相似度阈值
+    price_deviation_threshold: 0.15 # 价格偏差阈值
+    min_confidence_score: 0.6      # 最小置信度
+    max_recommendations: 5         # 最大推荐数量
+    lookback_days: 90             # 回溯分析天数
+
+# ==================== Agent Triggers ====================
+triggers:
+  # 定时推荐触发器
+  scheduled_recommendation:
+    - name: daily_recommendation_generation
+      description: "每天晚上20:00生成智能推荐"
+      cron: "0 20 * * *"  # 每天晚上20:00
+      timezone: "Asia/Shanghai"
+      enabled: true
+      priority: 1
+
+    - name: weekly_recommendation_review
+      description: "每周日上午9点深度推荐回顾"
+      cron: "0 9 * * 0"  # 每周日上午9点
+      timezone: "Asia/Shanghai"
+      enabled: true
+      priority: 2
+
+  # 数据变化触发器
+  data_monitor:
+    - name: new_inquiry_recommendation
+      description: "有新询盘时触发推荐生成"
+      trigger_condition: "new_inquiry_count > 0"
+      check_interval_minutes: 30
+      enabled: true
+      priority: 3
+
+    - name: price_update_recommendation
+      description: "价格信息更新时重新生成推荐"
+      trigger_condition: "quote_data_changes > 0"
+      check_interval_minutes: 60
+      enabled: true
+      priority: 4
+
+  # 手动触发器
+  manual_trigger:
+    - name: immediate_recommendation
+      description: "立即生成推荐分析"
+      trigger_condition: "manual_recommendation_requested"
+      enabled: true
+      priority: 1
+
+    - name: refresh_recommendations
+      description: "刷新所有推荐数据"
+      trigger_condition: "refresh_all_recommendations"
+      enabled: true
+      priority: 2
+
+# ==================== Agent Actions ====================
+actions:
+  primary:
+    - name: generate_daily_recommendations
+      description: "生成每日智能推荐"
+      command: "python3 generate_recommendations.py --mode daily"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 600  # 10 minutes
+      retry_count: 3
+      retry_delay: 180  # 3 minutes
+
+    - name: generate_weekly_recommendations
+      description: "生成每周深度推荐分析"
+      command: "python3 generate_recommendations.py --mode weekly"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 900  # 15 minutes
+      retry_count: 3
+      retry_delay: 300  # 5 minutes
+
+  secondary:
+    - name: analyze_recommendation_performance
+      description: "分析推荐性能和采纳率"
+      command: "python3 analyze_recommendation_performance.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 300  # 5 minutes
+      schedule: "0 22 * * *"  # 每天22点
+
+    - name: update_recommendation_models
+      description: "更新推荐模型和算法参数"
+      command: "python3 update_recommendation_models.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 600  # 10 minutes
+      condition: "performance_degradation_detected"
+
+    - name: send_recommendation_notifications
+      description: "发送推荐通知到用户"
+      command: "python3 send_recommendation_notifications.py"
+      working_directory: "/Users/gavin/Knowledge base"
+      timeout: 120  # 2 minutes
+      schedule: "0 8 * * *"  # 每天8点
+
+# ==================== 推荐算法配置 ====================
+recommendation_algorithms:
+  # 基于内容的推荐
+  content_based:
+    enabled: true
+    weight: 0.4
+    features:
+      - "product_category"
+      - "material"
+      - "specification"
+      - "application"
+    similarity_metric: "cosine"
+
+  # 协同过滤推荐
+  collaborative_filtering:
+    enabled: true
+    weight: 0.3
+    method: "user_based"
+    min_common_items: 3
+
+  # 基于价格趋势的推荐
+  price_trend_based:
+    enabled: true
+    weight: 0.2
+    lookback_days: 60
+    trend_analysis_method: "linear_regression"
+
+  # 规则基础推荐
+  rule_based:
+    enabled: true
+    weight: 0.1
+    rules:
+      - name: "moq_recommendation"
+        condition: "order_quantity < standard_moq"
+        action: "recommend_bulk_pricing"
+
+      - name: "material_substitution"
+        condition: "requested_material in high_priced_materials"
+        action: "suggest_alternative_materials"
+
+# ==================== 推荐数据源配置 ====================
+data_sources:
+  # 知识库数据
+  knowledge_base:
+    inquiries:
+      table: "knowledge_entries"
+      entity_types: ["inquiry"]
+      fields: ["name", "description", "attributes_json", "created_at"]
+      lookback_days: 90
+
+    quotes:
+      table: "knowledge_entries"
+      entity_types: ["quote"]
+      fields: ["name", "description", "attributes_json", "created_at"]
+      lookback_days: 120
+
+    products:
+      table: "knowledge_entries"
+      entity_types: ["product"]
+      fields: ["name", "description", "attributes_json"]
+
+    factories:
+      table: "knowledge_entries"
+      entity_types: ["factory"]
+      fields: ["name", "description", "attributes_json"]
+
+  # 推荐历史数据
+  recommendation_history:
+    table: "recommendations"
+    fields: [
+      "inquiry_id", "recommended_products", "recommended_price_range",
+      "confidence_score", "user_feedback", "created_at"
+    ]
+    feedback_types: ["accepted", "rejected", "modified"]
+
+  # 用户行为数据
+  user_behavior:
+    search_queries:
+      table: "search_logs"
+      fields: ["query", "results_clicked", "timestamp"]
+
+    recommendation_clicks:
+      table: "recommendation_clicks"
+      fields: ["recommendation_id", "clicked_items", "timestamp"]
+
+# ==================== 推荐输出配置 ====================
+output:
+  # 推荐存储
+  recommendation_storage:
+    table: "recommendations"
+    fields:
+      - "inquiry_id"
+      - "recommended_products"
+      - "recommended_suppliers"
+      - "recommended_price_range"
+      - "confidence_score"
+      - "recommendation_type"
+      - "recommendation_reason"
+      - "expires_at"
+      - "created_at"
+
+  # 推荐通知
+  recommendation_notifications:
+    enabled: true
+    channels:
+      - "api_webhook"
+      - "email"
+      - "frontend_notification"
+
+    webhook_endpoint: "/api/v1/recommendations/notify"
+
+    email_config:
+      enabled: false  # 根据隐私设置暂时禁用
+      recipients: []
+
+  # 推荐API
+  recommendation_api:
+    enabled: true
+    endpoints:
+      - "/api/v1/recommendations/inquiry/{inquiry_id}"
+      - "/api/v1/recommendations/similar/{product_id}"
+      - "/api/v1/recommendations/trending"
+      - "/api/v1/recommendations/feedback"
+
+  # 推荐报告
+  recommendation_reports:
+    enabled: true
+    schedule: "weekly"
+    sections:
+      - "recommendation_performance"
+      - "user_satisfaction"
+      - "conversion_rates"
+      - "top_recommended_products"
+
+# ==================== 推荐质量评估 ====================
+recommendation_quality:
+  # 准确性指标
+  accuracy_metrics:
+    - "recommendation_click_rate"
+    - "recommendation_conversion_rate"
+    - "user_satisfaction_score"
+    - "price_prediction_accuracy"
+
+  # 多样性指标
+  diversity_metrics:
+    - "product_category_diversity"
+    - "supplier_diversity"
+    - "price_range_diversity"
+
+  # 新颖性指标
+  novelty_metrics:
+    - "new_product_recommendation_rate"
+    - "alternative_suggestion_rate"
+    - "cross_category_recommendation"
+
+  # 质量阈值
+  quality_thresholds:
+    min_confidence_score: 0.6
+    min_conversion_rate: 0.1
+    max_price_deviation: 0.2
+    min_diversity_score: 0.3
+
+# ==================== 反馈学习机制 ====================
+feedback_learning:
+  # 用户反馈收集
+  feedback_collection:
+    enabled: true
+    feedback_types:
+      - "thumbs_up_down"
+      - "star_rating"
+      - "text_feedback"
+      - "purchase_confirmation"
+
+  # 模型更新
+  model_updates:
+    enabled: true
+    update_frequency: "weekly"
+    min_feedback_count: 10
+    learning_rate: 0.01
+
+  # A/B测试
+  ab_testing:
+    enabled: false  # 未来功能
+    test_groups: ["control", "algorithm_a", "algorithm_b"]
+    traffic_split: 0.1
+
+# ==================== 错误处理和重试策略 ====================
+error_handling:
+  max_retries: 3
+  retry_delay:
+    initial: 60  # seconds
+    max: 300     # 5 minutes
+    backoff_factor: 2
+
+  error_notifications:
+    enabled: true
+    recipients:
+      - "admin@company.com"
+    subject_prefix: "[Recommendation Agent Alert]"
+
+  critical_errors:
+    - "database_connection_failed"
+    - "recommendation_generation_failed"
+    - "similarity_calculation_error"
+    - "model_loading_failed"
+
+  retry_on_errors:
+    - "timeout"
+    - "temporary_unavailable"
+    - "resource_constraint"
+    - "data_temporarily_inconsistent"
+
+  skip_on_errors:
+    - "insufficient_data"
+    - "invalid_inquiry_format"
+    - "access_denied"
+
+# ==================== 工具权限配置 ====================
+tools_allowed:
+  FileSystem:
+    permissions: ["Read", "Write"]
+    allowed_paths:
+      - "/Users/gavin/Knowledge base/data"
+      - "/Users/gavin/Knowledge base/recommendations"
+
+  PythonExecution:
+    allowed_scripts:
+      - "generate_recommendations.py"
+      - "analyze_recommendation_performance.py"
+      - "update_recommendation_models.py"
+      - "send_recommendation_notifications.py"
+    sandbox_enabled: true
+    max_execution_time: 1200  # 20 minutes
+
+  SQLiteAccess:
+    allowed_databases:
+      - "knowledge_base.db"
+    allowed_operations: ["Read", "Write", "Update"]
+    max_query_time: 600  # 10 minutes
+
+  MachineLearning:
+    enabled: true
+    libraries:
+      - "numpy"
+      - "pandas"
+      - "scikit-learn"
+      - "scipy"
+      - "sentence-transformers"
+
+  StatisticalAnalysis:
+    enabled: true
+    libraries:
+      - "pandas"
+      - "numpy"
+      - "statistics"
+      - "scipy"
+
+# ==================== 资源限制 ====================
+resources:
+  max_memory: "2GB"
+  max_cpu_time: 1200  # 20 minutes per execution
+  max_concurrent_recommendations: 5
+  max_recommendation_cache_size: "100MB"
+
+# ==================== 隐私和合规性 ====================
+privacy_compliance:
+  data_privacy:
+    anonymize_user_data: true
+    encrypt_recommendation_data: true
+    retain_recommendation_logs: 90
+    audit_trail_enabled: true
+
+  business_rules:
+    respect_customer_preferences: true
+    avoid_recommendation_saturation: true
+    maintain_transparency: true
+    provide_opt_out_mechanism: true
+
+  regulatory_compliance:
+    gdpr_compliance: true
+    data_minimization: true
+    purpose_limitation: true
+    user_consent_required: false
