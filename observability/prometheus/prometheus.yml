@@ -1,0 +1,126 @@
+# Prometheus configuration for Knowledge Base Observability
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'knowledge-base'
+    environment: 'production'
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+# Load and evaluate rules
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Knowledge Base Application Metrics
+  - job_name: 'knowledge-base'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 15s
+    metrics_path: /metrics
+    params:
+      format: ['prometheus']
+
+    # Custom relabeling for application metrics
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-main'
+
+      - source_labels: [job]
+        target_label: service
+        replacement: 'knowledge-base'
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 30s
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-server'
+
+  # cAdvisor for container metrics (if running in containers)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['localhost:8080']
+    scrape_interval: 30s
+    metrics_path: /metrics
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-container'
+
+  # Database metrics (PostgreSQL Exporter)
+  - job_name: 'postgres-exporter'
+    static_configs:
+      - targets: ['localhost:9187']
+    scrape_interval: 30s
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-db'
+
+  # Redis metrics (Redis Exporter)
+  - job_name: 'redis-exporter'
+    static_configs:
+      - targets: ['localhost:9121']
+    scrape_interval: 30s
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-redis'
+
+  # Custom application health checks
+  - job_name: 'health-checks'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 10s
+    metrics_path: /health/metrics
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'knowledge-base-health'
+
+# Remote write configuration (optional)
+# remote_write:
+#   - url: "http://remote-storage:9201/api/v1/write"
+#     queue_config:
+#       max_samples_per_send: 1000
+#       max_shards: 200
+#       capacity: 2500
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention.time: 15d
+    retention.size: 10GB
+
+    # WAL configuration
+    wal:
+      enabled: true
+      dir: /prometheus/wal
+
+    # Chunk configuration
+    chunks:
+      max_concurrent: 3

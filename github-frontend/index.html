@@ -1,724 +1,197 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能知识库策略中心 - Stage 5</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Manufacturing Knowledge Base - Modern UI with LobeChat Components" />
+    <meta name="theme-color" content="#000000" />
+
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <title>Manufacturing Knowledge Base</title>
+
+    <!-- Meta tags for PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Manufacturing KB" />
+    <meta name="application-name" content="Manufacturing KB" />
+    <meta name="msapplication-TileColor" content="#000000" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+
     <style>
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 10px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-        }
-        .strategy-card {
-            border-left: 4px solid #007bff;
-            margin-bottom: 1rem;
-        }
-        .confidence-high { border-left-color: #28a745; }
-        .confidence-medium { border-left-color: #ffc107; }
-        .confidence-low { border-left-color: #dc3545; }
-        .chat-container {
-            height: 400px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 1rem;
-            background-color: #f8f9fa;
-        }
-        .status-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
+      /* Critical CSS for loading state */
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      /* Loading spinner */
+      .loading-spinner {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 40px;
+        height: 40px;
+        border: 3px solid hsl(var(--muted));
+        border-top: 3px solid hsl(var(--primary));
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
+      }
+
+      /* Prevent FOUC */
+      .no-js {
+        display: none;
+      }
+
+      .js-loading {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
     </style>
-</head>
-<body>
-    <!-- 系统状态指示器 -->
-    <div class="status-badge">
-        <span class="badge bg-success" id="systemStatus">
-            <i class="bi bi-circle-fill"></i> 系统在线
-        </span>
+  </head>
+  <body>
+    <div id="root">
+      <!-- Loading state -->
+      <div class="loading-spinner" role="status" aria-label="Loading application">
+        <span class="sr-only">Loading Manufacturing Knowledge Base...</span>
+      </div>
     </div>
 
-    <!-- 头部导航 -->
-    <header class="dashboard-header">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-3">
-                        <i class="bi bi-cpu"></i> 智能知识库策略中心
-                    </h1>
-                    <p class="lead mb-0">Stage 5 - 智能业务助手系统</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="text-white-50">
-                        <small>最后更新: <span id="lastUpdate">--</span></small>
-                    </div>
-                    <div class="mt-2">
-                        <button class="btn btn-light btn-sm" onclick="refreshData()">
-                            <i class="bi bi-arrow-clockwise"></i> 刷新数据
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- No-JS fallback -->
+    <noscript>
+      <div class="no-js">
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: #f8f9fa;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+          color: #333;
+          text-align: center;
+          padding: 20px;
+          box-sizing: border-box;
+        ">
+          <div>
+            <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 600;">
+              Manufacturing Knowledge Base
+            </h1>
+            <p style="margin: 0 0 24px 0; font-size: 16px; color: #666;">
+              This application requires JavaScript to run. Please enable JavaScript in your browser settings and reload the page.
+            </p>
+            <button
+              onclick="window.location.reload()"
+              style="
+                background: #2563eb;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+              "
+              onmouseover="this.style.backgroundColor='#1d4ed8'"
+              onmouseout="this.style.backgroundColor='#2563eb'"
+            >
+              Reload Page
+            </button>
+          </div>
         </div>
-    </header>
+      </div>
+    </noscript>
 
-    <!-- 主要内容 -->
-    <main class="container my-4">
-        <!-- 系统状态概览 -->
-        <section class="row mb-4">
-            <div class="col-md-3">
-                <div class="stat-card text-center">
-                    <h3 class="text-primary" id="knowledgeCount">0</h3>
-                    <p class="mb-0">知识条目</p>
-                    <small class="text-muted">活跃实体</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center">
-                    <h3 class="text-success" id="strategyCount">0</h3>
-                    <p class="mb-0">策略建议</p>
-                    <small class="text-muted">待审核</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center">
-                    <h3 class="text-warning" id="queryCount">0</h3>
-                    <p class="mb-0">今日查询</p>
-                    <small class="text-muted">语义搜索</small>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="stat-card text-center">
-                    <h3 class="text-info" id="syncStatus">✅</h3>
-                    <p class="mb-0">同步状态</p>
-                    <small class="text-muted">GitHub备份</small>
-                </div>
-            </div>
-        </section>
+    <!-- Main application script -->
+    <script type="module" src="/src/main.tsx"></script>
 
-        <!-- 选项卡导航 -->
-        <ul class="nav nav-tabs" id="mainTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
-                    <i class="bi bi-speedometer2"></i> 系统概览
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="strategies-tab" data-bs-toggle="tab" data-bs-target="#strategies" type="button" role="tab">
-                    <i class="bi bi-lightbulb"></i> 策略建议
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends" type="button" role="tab">
-                    <i class="bi bi-graph-up"></i> 趋势分析
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
-                    <i class="bi bi-chat-dots"></i> 智能问答
-                </button>
-            </li>
-        </ul>
-
-        <!-- 选项卡内容 -->
-        <div class="tab-content" id="mainTabContent">
-            <!-- 系统概览 -->
-            <div class="tab-pane fade show active" id="overview" role="tabpanel">
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-robot"></i> 智能体状态</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="agent-status">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>自动学习Agent</span>
-                                        <span class="badge bg-success">运行中</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>报价策略Agent</span>
-                                        <span class="badge bg-success">运行中</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span>同步Agent</span>
-                                        <span class="badge bg-warning">待执行</span>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span>聊天接口API</span>
-                                        <span class="badge bg-success">端口8002</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-database"></i> 数据库状态</h5>
-                            </div>
-                            <div class="card-body">
-                                <table class="table table-sm">
-                                    <tr>
-                                        <td>总表数</td>
-                                        <td class="text-end">24</td>
-                                    </tr>
-                                    <tr>
-                                        <td>知识条目</td>
-                                        <td class="text-end" id="dbEntries">5</td>
-                                    </tr>
-                                    <tr>
-                                        <td>实体类型</td>
-                                        <td class="text-end">9</td>
-                                    </tr>
-                                    <tr>
-                                        <td>嵌入索引</td>
-                                        <td class="text-end">100%</td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 系统性能图表 -->
-                <div class="row mt-4">
-                    <div class="col-md-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-graph-up-arrow"></i> 系统性能趋势</h5>
-                            </div>
-                            <div class="card-body">
-                                <canvas id="performanceChart" height="100"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h5 class="mb-0"><i class="bi bi-shield-check"></i> 安全状态</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="alert alert-success mb-2">
-                                    <i class="bi bi-check-circle"></i> 数据脱敏启用
-                                </div>
-                                <div class="alert alert-success mb-2">
-                                    <i class="bi bi-check-circle"></i> 敏感目录排除
-                                </div>
-                                <div class="alert alert-warning mb-0">
-                                    <i class="bi bi-exclamation-triangle"></i> 等待GitHub同步
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 策略建议 -->
-            <div class="tab-pane fade" id="strategies" role="tabpanel">
-                <div class="mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4><i class="bi bi-lightbulb"></i> 智能策略建议</h4>
-                        <button class="btn btn-primary" onclick="generateNewStrategy()">
-                            <i class="bi bi-plus-circle"></i> 生成新策略
-                        </button>
-                    </div>
-
-                    <div id="strategiesList">
-                        <!-- 策略建议将通过JavaScript动态加载 -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- 趋势分析 -->
-            <div class="tab-pane fade" id="trends" role="tabpanel">
-                <div class="mt-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-currency-yen"></i> 价格趋势</h5>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="priceChart" height="150"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-search"></i> 查询趋势</h5>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="queryChart" height="150"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> 学习进度</h5>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="learningChart" height="100"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 智能问答 -->
-            <div class="tab-pane fade" id="chat" role="tabpanel">
-                <div class="mt-4">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> 智能问答</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="chat-container" id="chatContainer">
-                                        <div class="text-muted text-center">
-                                            <i class="bi bi-robot"></i> 开始提问吧...
-                                        </div>
-                                    </div>
-
-                                    <div class="input-group mt-3">
-                                        <input type="text" class="form-control" id="queryInput"
-                                               placeholder="输入您的问题，例如：查询不锈钢螺栓的价格信息">
-                                        <button class="btn btn-primary" onclick="sendQuery()">
-                                            <i class="bi bi-send"></i> 发送
-                                        </button>
-                                    </div>
-
-                                    <div class="mt-2">
-                                        <small class="text-muted">
-                                            快速查询：
-                                            <a href="#" onclick="quickQuery('螺栓产品信息')">螺栓产品信息</a> |
-                                            <a href="#" onclick="quickQuery('价格趋势')">价格趋势</a> |
-                                            <a href="#" onclick="quickQuery('供应商信息')">供应商信息</a>
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> 使用提示</h5>
-                                </div>
-                                <div class="card-body">
-                                    <ul class="list-unstyled">
-                                        <li class="mb-2">
-                                            <i class="bi bi-check text-success"></i>
-                                            支持中英文查询
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="bi bi-check text-success"></i>
-                                            语义搜索理解意图
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="bi bi-check text-success"></i>
-                                            实时数据同步
-                                        </li>
-                                        <li class="mb-2">
-                                            <i class="bi bi-check text-success"></i>
-                                            智能推荐相关内容
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- 页脚 -->
-    <footer class="bg-light py-4 mt-5">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <p class="mb-0">© 2025 智能知识库系统 - Stage 5</p>
-                </div>
-                <div class="col-md-6 text-end">
-                    <small class="text-muted">
-                        系统版本: v2.0 |
-                        API端口: 8001(知识库) 8002(聊天接口) |
-                        最后验证: <span id="lastVerification">--</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Remove loading spinner once app loads -->
     <script>
-        // API客户端
-        const API_BASE = 'http://localhost:8001/api';
-        const CHAT_API_BASE = 'http://localhost:8002/api/v1';
+      // Remove loading spinner when app starts mounting
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const spinner = document.querySelector('.loading-spinner');
+          if (spinner) {
+            spinner.style.opacity = '0';
+            setTimeout(function() {
+              if (spinner.parentNode) {
+                spinner.parentNode.removeChild(spinner);
+              }
+            }, 300);
+          }
+        }, 100);
+      });
 
-        // 初始化页面
-        document.addEventListener('DOMContentLoaded', function() {
-            refreshData();
-            initializeCharts();
-            loadStrategies();
-            updateSystemStatus();
-
-            // 设置自动刷新
-            setInterval(updateSystemStatus, 30000); // 30秒更新一次状态
-        });
-
-        // 更新系统状态
-        async function updateSystemStatus() {
-            try {
-                // 检查知识库API
-                const healthResponse = await fetch(`${API_BASE}/health`);
-                const isHealthy = healthResponse.ok;
-
-                // 检查聊天API
-                const chatResponse = await fetch(`${CHAT_API_BASE}/chat/query`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: 'test', limit: 1 })
-                });
-                const isChatHealthy = chatResponse.ok;
-
-                // 更新状态指示器
-                const statusElement = document.getElementById('systemStatus');
-                if (isHealthy && isChatHealthy) {
-                    statusElement.className = 'badge bg-success';
-                    statusElement.innerHTML = '<i class="bi bi-circle-fill"></i> 系统在线';
-                } else {
-                    statusElement.className = 'badge bg-danger';
-                    statusElement.innerHTML = '<i class="bi bi-circle-fill"></i> 系统离线';
-                }
-
-                // 更新最后更新时间
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
-
-            } catch (error) {
-                console.error('Failed to update system status:', error);
-                document.getElementById('systemStatus').className = 'badge bg-warning';
-                document.getElementById('systemStatus').innerHTML = '<i class="bi bi-circle-fill"></i> 连接异常';
-            }
+      // Add error handling for script loading
+      window.addEventListener('error', function(e) {
+        console.error('Application loading error:', e);
+        const spinner = document.querySelector('.loading-spinner');
+        if (spinner) {
+          spinner.innerHTML = `
+            <div style="
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              text-align: center;
+              font-family: Inter, sans-serif;
+              color: #dc2626;
+              max-width: 400px;
+              padding: 20px;
+            ">
+              <h2 style="margin: 0 0 16px 0; font-size: 20px;">Application Failed to Load</h2>
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #666;">
+                There was an error loading the application. Please refresh the page or contact support.
+              </p>
+              <button
+                onclick="window.location.reload()"
+                style="
+                  background: #dc2626;
+                  color: white;
+                  border: none;
+                  padding: 8px 16px;
+                  border-radius: 4px;
+                  font-size: 12px;
+                  cursor: pointer;
+                "
+              >
+                Refresh
+              </button>
+            </div>
+          `;
         }
-
-        // 刷新数据
-        async function refreshData() {
-            try {
-                // 获取统计数据
-                const statsResponse = await fetch(`${API_BASE}/stats`);
-                const stats = await statsResponse.json();
-
-                document.getElementById('knowledgeCount').textContent = stats.total_entries || 0;
-                document.getElementById('dbEntries').textContent = stats.total_entries || 0;
-
-                // 获取策略建议数量
-                const strategiesResponse = await fetch(`${API_BASE}/strategy-suggestions`);
-                const strategies = await strategiesResponse.json();
-                document.getElementById('strategyCount').textContent = strategies.length || 0;
-
-                // 模拟今日查询数（实际应该从聊天API获取）
-                document.getElementById('queryCount').textContent = Math.floor(Math.random() * 50) + 10;
-
-            } catch (error) {
-                console.error('Failed to refresh data:', error);
-            }
-        }
-
-        // 加载策略建议
-        async function loadStrategies() {
-            try {
-                const response = await fetch(`${API_BASE}/strategy-suggestions`);
-                const strategies = await response.json();
-
-                const container = document.getElementById('strategiesList');
-                container.innerHTML = '';
-
-                if (strategies.length === 0) {
-                    container.innerHTML = `
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i> 暂无策略建议，请先生成新的策略分析。
-                        </div>
-                    `;
-                    return;
-                }
-
-                strategies.forEach(strategy => {
-                    const confidenceClass = strategy.confidence_score > 0.8 ? 'confidence-high' :
-                                         strategy.confidence_score > 0.6 ? 'confidence-medium' : 'confidence-low';
-
-                    const strategyCard = `
-                        <div class="card strategy-card ${confidenceClass}">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="card-title">${strategy.title}</h6>
-                                        <p class="card-text">${strategy.description}</p>
-                                        <small class="text-muted">
-                                            置信度: ${(strategy.confidence_score * 100).toFixed(1)}% |
-                                            影响等级: ${strategy.impact_level}
-                                        </small>
-                                    </div>
-                                    <span class="badge bg-primary">${strategy.suggestion_type}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    container.innerHTML += strategyCard;
-                });
-
-            } catch (error) {
-                console.error('Failed to load strategies:', error);
-                document.getElementById('strategiesList').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> 加载策略建议失败，请检查API连接。
-                    </div>
-                `;
-            }
-        }
-
-        // 发送查询
-        async function sendQuery() {
-            const queryInput = document.getElementById('queryInput');
-            const query = queryInput.value.trim();
-
-            if (!query) return;
-
-            const chatContainer = document.getElementById('chatContainer');
-
-            // 添加用户消息
-            const userMessage = `
-                <div class="d-flex justify-content-end mb-3">
-                    <div class="bg-primary text-white p-2 rounded-3" style="max-width: 70%;">
-                        <strong>您:</strong> ${query}
-                    </div>
-                </div>
-            `;
-            chatContainer.innerHTML += userMessage;
-
-            queryInput.value = '';
-
-            try {
-                // 发送查询到聊天API
-                const response = await fetch(`${CHAT_API_BASE}/chat/query`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: query,
-                        context: '紧固件产品',
-                        limit: 5
-                    })
-                });
-
-                const result = await response.json();
-
-                // 添加AI回复
-                const aiMessage = `
-                    <div class="d-flex justify-content-start mb-3">
-                        <div class="bg-light p-2 rounded-3" style="max-width: 70%;">
-                            <strong><i class="bi bi-robot"></i> AI助手:</strong>
-                            <div class="mt-1">
-                                ${result.response || '抱歉，我暂时无法回答这个问题。'}
-                            </div>
-                            ${result.results && result.results.length > 0 ? `
-                                <div class="mt-2">
-                                    <small class="text-muted">相关结果:</small>
-                                    <ul class="mb-0">
-                                        ${result.results.map(r => `<li>${r.name}</li>`).join('')}
-                                    </ul>
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                `;
-                chatContainer.innerHTML += aiMessage;
-
-                // 滚动到底部
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-
-            } catch (error) {
-                console.error('Query failed:', error);
-                const errorMessage = `
-                    <div class="d-flex justify-content-start mb-3">
-                        <div class="bg-danger text-white p-2 rounded-3" style="max-width: 70%;">
-                            <strong><i class="bi bi-exclamation-triangle"></i> 错误:</strong>
-                            查询失败，请检查API连接或稍后重试。
-                        </div>
-                    </div>
-                `;
-                chatContainer.innerHTML += errorMessage;
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        }
-
-        // 快速查询
-        function quickQuery(query) {
-            document.getElementById('queryInput').value = query;
-            sendQuery();
-        }
-
-        // 生成新策略
-        async function generateNewStrategy() {
-            try {
-                // 这里应该调用策略生成API
-                const response = await fetch('/api/generate-strategy', { method: 'POST' });
-
-                if (response.ok) {
-                    loadStrategies(); // 重新加载策略列表
-                    alert('策略生成成功！');
-                } else {
-                    alert('策略生成失败，请稍后重试。');
-                }
-            } catch (error) {
-                console.error('Failed to generate strategy:', error);
-                alert('策略生成失败，请检查API连接。');
-            }
-        }
-
-        // 初始化图表
-        function initializeCharts() {
-            // 性能趋势图
-            const performanceCtx = document.getElementById('performanceChart');
-            if (performanceCtx) {
-                new Chart(performanceCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'],
-                        datasets: [{
-                            label: '查询数量',
-                            data: [5, 3, 8, 15, 12, 9],
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
-                        }, {
-                            label: '学习条目',
-                            data: [2, 1, 3, 5, 4, 2],
-                            borderColor: 'rgb(255, 99, 132)',
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-
-            // 价格趋势图
-            const priceCtx = document.getElementById('priceChart');
-            if (priceCtx) {
-                new Chart(priceCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-                        datasets: [{
-                            label: '不锈钢螺栓',
-                            data: [0.42, 0.45, 0.43, 0.48, 0.46, 0.50],
-                            borderColor: 'rgb(54, 162, 235)',
-                            tension: 0.1
-                        }, {
-                            label: '碳钢螺栓',
-                            data: [0.15, 0.16, 0.15, 0.18, 0.17, 0.19],
-                            borderColor: 'rgb(255, 206, 86)',
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: false,
-                                title: { display: true, text: '价格 (RMB)' }
-                            }
-                        }
-                    }
-                });
-            }
-
-            // 查询趋势图
-            const queryCtx = document.getElementById('queryChart');
-            if (queryCtx) {
-                new Chart(queryCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
-                        datasets: [{
-                            label: '查询次数',
-                            data: [12, 19, 15, 25, 22, 18, 8],
-                            backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                            borderColor: 'rgba(153, 102, 255, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: { beginAtZero: true }
-                        }
-                    }
-                });
-            }
-
-            // 学习进度图
-            const learningCtx = document.getElementById('learningChart');
-            if (learningCtx) {
-                new Chart(learningCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['已学习', '待学习'],
-                        datasets: [{
-                            data: [75, 25],
-                            backgroundColor: [
-                                'rgba(75, 192, 192, 0.2)',
-                                'rgba(255, 99, 132, 0.2)'
-                            ],
-                            borderColor: [
-                                'rgba(75, 192, 192, 1)',
-                                'rgba(255, 99, 132, 1)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false
-                    }
-                });
-            }
-        }
-
-        // 回车发送查询
-        document.getElementById('queryInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendQuery();
-            }
-        });
+      });
     </script>
-</body>
+  </body>
 </html>

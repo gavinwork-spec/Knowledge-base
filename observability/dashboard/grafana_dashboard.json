@@ -1,0 +1,1029 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Knowledge Base Observability Dashboard",
+    "tags": ["knowledge-base", "observability", "ai", "search"],
+    "style": "dark",
+    "timezone": "browser",
+    "editable": true,
+    "gnetId": null,
+    "graphTooltip": 0,
+    "hideControls": false,
+    "links": [],
+    "refresh": "30s",
+    "rows": [
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 0
+            },
+            "id": 2,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "rate(kb_requests_per_second[5m])",
+                "interval": "",
+                "legendFormat": "{{endpoint}}",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "rate(kb_requests_per_second{endpoint=\"search\"}[5m])",
+                "interval": "",
+                "legendFormat": "search_requests",
+                "refId": "B",
+                "step": 15
+              },
+              {
+                "expr": "rate(kb_requests_per_second{endpoint=\"ai\"}[5m])",
+                "interval": "",
+                "legendFormat": "ai_requests",
+                "refId": "C",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Request Rate",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "reqps",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 0
+            },
+            "id": 3,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(kb_request_duration_seconds_bucket[5m]))",
+                "interval": "",
+                "legendFormat": "95th percentile",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(kb_request_duration_seconds_bucket[5m]))",
+                "interval": "",
+                "legendFormat": "50th percentile",
+                "refId": "B",
+                "step": 15
+              },
+              {
+                "expr": "histogram_quantile(0.99, rate(kb_request_duration_seconds_bucket[5m]))",
+                "interval": "",
+                "legendFormat": "99th percentile",
+                "refId": "C",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Response Time Percentiles",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "s",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "System Performance"
+      },
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 10
+            },
+            "id": 4,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "kb_cpu_usage_percent",
+                "interval": "",
+                "legendFormat": "CPU",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "kb_memory_usage_bytes / (1024*1024*1024)",
+                "interval": "",
+                "legendFormat": "Memory GB",
+                "refId": "B",
+                "step": 15
+              }
+            ],
+            "thresholds": [
+              {
+                "colorMode": "critical",
+                "fill": true,
+                "line": true,
+                "op": "gt",
+                "value": 80,
+                "visible": true
+              }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "System Resources",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "percent",
+                "label": null,
+                "logBase": 1,
+                "max": 100,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {
+            "Healthy": "rgb(0, 255, 0)",
+            "Unhealthy": "rgb(255, 0, 0)"
+          },
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 10
+            },
+            "id": 5,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "kb_system_health_score",
+                "interval": "",
+                "legendFormat": "Health Score",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "kb_error_rate",
+                "interval": "",
+                "legendFormat": "Error Rate",
+                "refId": "B",
+                "step": 15
+              }
+            ],
+            "thresholds": [
+              {
+                "colorMode": "critical",
+                "fill": true,
+                "line": true,
+                "op": "lt",
+                "value": 70,
+                "visible": true
+              }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "System Health",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "percent",
+                "label": null,
+                "logBase": 1,
+                "max": 100,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "Health & Resources"
+      },
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 0,
+              "y": 20
+            },
+            "id": 6,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "kb_active_users_total",
+                "interval": "",
+                "legendFormat": "{{period}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Active Users",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 8,
+              "y": 20
+            },
+            "id": 7,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "increase(kb_user_sessions_total[5m])",
+                "interval": "",
+                "legendFormat": "{{status}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "User Sessions",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 8,
+              "x": 16,
+              "y": 20
+            },
+            "id": 8,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, kb_user_engagement_score_bucket[5m])",
+                "interval": "",
+                "legendFormat": "95th percentile",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "histogram_quantile(0.50, kb_user_engagement_score_bucket[5m])",
+                "interval": "",
+                "legendFormat": "50th percentile",
+                "refId": "B",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "User Engagement",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "short",
+                "label": null,
+                "logBase": 1,
+                "max": 100,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "User Analytics"
+      },
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 30
+            },
+            "id": 9,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "rate(kb_ai_requests_total[5m])",
+                "interval": "",
+                "legendFormat": "{{model}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "AI Request Rate",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "reqps",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 30
+            },
+            "id": 10,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(kb_ai_response_time_seconds_bucket[5m]))",
+                "interval": "",
+                "legendFormat": "95th percentile",
+                "refId": "A",
+                "step": 15
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(kb_ai_response_time_seconds_bucket[5m]))",
+                "interval": "",
+                "legendFormat": "50th percentile",
+                "refId": "B",
+                "step": 15
+              }
+            ],
+            "thresholds": [
+              {
+                "colorMode": "critical",
+                "fill": true,
+                "line": true,
+                "op": "gt",
+                "value": 30,
+                "visible": true
+              }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "AI Response Time",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "s",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "AI/ML Metrics"
+      },
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 0,
+              "y": 40
+            },
+            "id": 11,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "kb_ai_cost_total_usd",
+                "interval": "",
+                "legendFormat": "{{cost_center}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "AI Costs by Cost Center",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "USD",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          },
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 12,
+              "x": 12,
+              "y": 40
+            },
+            "id": 12,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "kb_daily_cost_budget_utilization",
+                "interval": "",
+                "legendFormat": "{{cost_center}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [
+              {
+                "colorMode": "warning",
+                "fill": true,
+                "line": true,
+                "op": "gt",
+                "value": 0.8,
+                "visible": true
+              },
+              {
+                "colorMode": "critical",
+                "fill": true,
+                "line": true,
+                "op": "gt",
+                "value": 1.0,
+                "visible": true
+              }
+            ],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Budget Utilization",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "percent",
+                "label": null,
+                "logBase": 1,
+                "max": 1,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "Cost Analysis"
+      },
+      {
+        "collapse": false,
+        "height": "250px",
+        "panels": [
+          {
+            "aliasColors": {},
+            "bars": false,
+            "dashLength": 10,
+            "dashes": false,
+            "datasource": "Prometheus",
+            "fill": 1,
+            "gridPos": {
+              "h": 8,
+              "w": 24,
+              "x": 0,
+              "y": 50
+            },
+            "id": 13,
+            "legend": {
+              "avg": false,
+              "current": false,
+              "max": false,
+              "min": false,
+              "show": true,
+              "total": false,
+              "values": false
+            },
+            "lines": true,
+            "linewidth": 2,
+            "links": [],
+            "nullPointMode": "null",
+            "percentage": false,
+            "pointradius": 2,
+            "points": false,
+            "renderer": "flot",
+            "seriesOverrides": [],
+            "spaceLength": 10,
+            "stack": false,
+            "steppedLine": false,
+            "targets": [
+              {
+                "expr": "increase(kb_search_requests_total[5m])",
+                "interval": "",
+                "legendFormat": "{{search_type}}",
+                "refId": "A",
+                "step": 15
+              }
+            ],
+            "thresholds": [],
+            "timeFrom": null,
+            "timeShift": null,
+            "title": "Search Requests by Type",
+            "tooltip": {
+              "shared": true,
+              "sort": 0,
+              "value_type": "individual"
+            },
+            "type": "graph",
+            "xaxis": {
+              "buckets": null,
+              "mode": "time",
+              "name": null,
+              "show": true,
+              "values": []
+            },
+            "yaxes": [
+              {
+                "format": "reqps",
+                "label": null,
+                "logBase": 1,
+                "max": null,
+                "min": 0,
+                "show": true
+              }
+            ]
+          }
+        ],
+        "title": "Search Analytics"
+      }
+    ],
+    "schemaVersion": 14,
+    "version": 1,
+    "description": "Comprehensive observability dashboard for Knowledge Base system"
+  }
+}
