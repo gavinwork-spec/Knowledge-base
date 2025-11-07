@@ -1,0 +1,382 @@
+version: '3.8'
+
+services:
+  # Redis 消息代理和缓存
+  redis:
+    image: redis:7-alpine
+    container_name: knowledge-base-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --appendonly yes
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL 数据库 (带 pgvector 扩展)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: knowledge-base-postgres
+    environment:
+      POSTGRES_DB: knowledge_base
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./microservices/sql/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./microservices/sql/migration.sql:/docker-entrypoint-initdb.d/02-migration.sql
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 文档处理服务
+  document-service:
+    build:
+      context: .
+      dockerfile: ./microservices/document-service/Dockerfile
+    container_name: knowledge-base-document-service
+    ports:
+      - "8003:8003"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/knowledge_base
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=document-service
+      - SERVICE_PORT=8003
+      - LOG_LEVEL=INFO
+      - MAX_WORKERS=4
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 搜索服务
+  search-service:
+    build:
+      context: .
+      dockerfile: ./microservices/search-service/Dockerfile
+    container_name: knowledge-base-search-service
+    ports:
+      - "8004:8004"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/knowledge_base
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=search-service
+      - SERVICE_PORT=8004
+      - LOG_LEVEL=INFO
+      - EMBEDDING_MODEL=all-MiniLM-L6-v2
+      - SIMILARITY_THRESHOLD=0.7
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Agent 服务
+  agent-service:
+    build:
+      context: .
+      dockerfile: ./microservices/agent-service/Dockerfile
+    container_name: knowledge-base-agent-service
+    ports:
+      - "8005:8005"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/knowledge_base
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=agent-service
+      - SERVICE_PORT=8005
+      - LOG_LEVEL=INFO
+      - AGENT_TIMEOUT=300
+    volumes:
+      - ./agents:/app/agents
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 通知服务
+  notify-service:
+    build:
+      context: .
+      dockerfile: ./microservices/notify-service/Dockerfile
+    container_name: knowledge-base-notify-service
+    ports:
+      - "8006:8006"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=notify-service
+      - SERVICE_PORT=8006
+      - LOG_LEVEL=INFO
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
+    volumes:
+      - ./templates:/app/templates
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 用户服务
+  user-service:
+    build:
+      context: .
+      dockerfile: ./microservices/user-service/Dockerfile
+    container_name: knowledge-base-user-service
+    ports:
+      - "8007:8007"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/knowledge_base
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=user-service
+      - SERVICE_PORT=8007
+      - LOG_LEVEL=INFO
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRE_HOURS=24
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API 网关
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./microservices/api-gateway/Dockerfile
+    container_name: knowledge-base-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - SERVICE_NAME=api-gateway
+      - SERVICE_PORT=8000
+      - LOG_LEVEL=INFO
+      - RATE_LIMIT_REQUESTS=100
+      - RATE_LIMIT_WINDOW=60
+    depends_on:
+      - document-service
+      - search-service
+      - agent-service
+      - notify-service
+      - user-service
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端应用
+  frontend:
+    build:
+      context: .
+      dockerfile: ./github-frontend/Dockerfile
+    container_name: knowledge-base-frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+    volumes:
+      - ./github-frontend/build:/usr/share/nginx/html
+    depends_on:
+      - api-gateway
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 监控服务 - Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: knowledge-base-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 监控服务 - Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: knowledge-base-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 日志聚合 - ELK Stack (Elasticsearch)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: knowledge-base-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 日志聚合 - Kibana
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: knowledge-base-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 文件存储 - MinIO
+  minio:
+    image: minio/minio:latest
+    container_name: knowledge-base-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - knowledge-network
+    restart: unless-stopped
+
+  # 数据库迁移工具
+  migration:
+    build:
+      context: .
+      dockerfile: ./microservices/migration/Dockerfile
+    container_name: knowledge-base-migration
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/knowledge_base
+      - SQLITE_PATH=/app/knowledge_base.db
+    volumes:
+      - .:/app
+      - ./knowledge_base.db:/app/knowledge_base.db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - knowledge-network
+    profiles:
+      - migration
+
+# 网络配置
+networks:
+  knowledge-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  minio_data:
+    driver: local
