@@ -1,0 +1,27 @@
+# Core dependencies
+httpx>=0.24.0
+pydantic>=2.0.0
+websockets>=11.0.0
+PyYAML>=6.0.0
+
+# Optional dependencies for enhanced functionality
+# Uncomment as needed:
+
+# For async performance improvements
+# aiohttp>=3.8.0
+# orjson>=3.8.0
+
+# For development (install with pip install -e .[dev])
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# pytest-asyncio>=0.21.0
+# black>=22.0.0
+# isort>=5.10.0
+# flake8>=5.0.0
+# mypy>=1.0.0
+# pre-commit>=2.20.0
+
+# For documentation (install with pip install -e .[docs])
+# mkdocs>=1.4.0
+# mkdocs-material>=8.5.0
+# mkdocstrings[python]>=0.20.0

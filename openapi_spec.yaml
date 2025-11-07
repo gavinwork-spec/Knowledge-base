@@ -1,0 +1,1535 @@
+openapi: 3.0.3
+info:
+  title: Knowledge Base API Suite
+  description: |
+    A comprehensive API suite for knowledge base management, search, and AI-powered interactions.
+
+    This API consolidates multiple services:
+    - **Chat Interface API**: Natural language querying for customers, quotes, products, and factories
+    - **Knowledge Base API**: CRUD operations for knowledge entries and categories
+    - **Hybrid Search API**: Advanced search combining semantic, keyword, and knowledge graph search
+    - **Personalized Search API**: Privacy-first personalized search with user behavior learning
+
+    ## Features
+    - 🔍 Hybrid search (semantic + keyword + knowledge graph)
+    - 🤖 AI-powered natural language processing
+    - 👤 User personalization with privacy protection (GDPR/CCPA compliant)
+    - 📊 Real-time analytics and monitoring
+    - 🔐 Authentication and authorization
+    - 📱 WebSocket support for real-time interactions
+    - 🚀 High-performance caching and optimization
+
+    ## Authentication
+    Most endpoints support both:
+    - Bearer Token authentication (JWT)
+    - Session-based authentication
+
+    ## Privacy & Compliance
+    - GDPR compliant data handling
+    - CCPA compliant privacy controls
+    - User consent management
+    - Data anonymization and retention controls
+  version: 1.0.0
+  contact:
+    name: Knowledge Base API Support
+    email: support@knowledgebase.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Chat Interface API
+  - url: http://localhost:8001
+    description: Knowledge Base API
+  - url: http://localhost:8006
+    description: Hybrid Search API
+  - url: http://localhost:8007
+    description: Personalized Search API
+
+tags:
+  - name: Chat Interface
+    description: Natural language querying interface
+  - name: Knowledge Base
+    description: Knowledge entry management
+  - name: Search
+    description: Search operations
+  - name: Personalized Search
+    description: Personalized search with user behavior
+  - name: Documents
+    description: Document indexing and management
+  - name: Analytics
+    description: Analytics and monitoring
+  - name: User Management
+    description: User preferences and privacy
+  - name: WebSocket
+    description: Real-time WebSocket endpoints
+
+paths:
+  /:
+    get:
+      tags: [Health Check]
+      summary: Health check endpoint
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: "Knowledge Base API"
+                  status:
+                    type: string
+                    example: "active"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "1.0.0"
+
+  /api/chat/query:
+    post:
+      tags: [Chat Interface]
+      summary: Execute natural language query
+      operationId: executeQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Natural language query
+                  example: "Show me customers in California"
+                context:
+                  type: object
+                  description: Additional context for the query
+                  properties:
+                    user_id:
+                      type: string
+                    session_id:
+                      type: string
+                filters:
+                  type: object
+                  description: Search filters
+                  example:
+                    date_range: "last_30_days"
+                    status: "active"
+              required:
+                - query
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  query:
+                    type: string
+                  parsed_query:
+                    type: object
+                  results:
+                    type: array
+                    items:
+                      type: object
+                  execution_time:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/customers:
+    get:
+      tags: [Chat Interface]
+      summary: Get all customers
+      operationId: getCustomers
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+                  total:
+                    type: integer
+
+  /api/customers/search:
+    post:
+      tags: [Chat Interface]
+      summary: Search customers
+      operationId: searchCustomers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                filters:
+                  type: object
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+
+  /api/knowledge/entries:
+    get:
+      tags: [Knowledge Base]
+      summary: Get knowledge entries
+      operationId: getKnowledgeEntries
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Knowledge entries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entries:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/KnowledgeEntry'
+                  total:
+                    type: integer
+
+    post:
+      tags: [Knowledge Base]
+      summary: Create knowledge entry
+      operationId: createKnowledgeEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeEntryCreate'
+      responses:
+        '201':
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/knowledge/entries/{entry_id}:
+    get:
+      tags: [Knowledge Base]
+      summary: Get specific knowledge entry
+      operationId: getKnowledgeEntry
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Knowledge entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Knowledge Base]
+      summary: Update knowledge entry
+      operationId: updateKnowledgeEntry
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeEntryUpdate'
+      responses:
+        '200':
+          description: Entry updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeEntry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Knowledge Base]
+      summary: Delete knowledge entry
+      operationId: deleteKnowledgeEntry
+      parameters:
+        - name: entry_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Entry deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/search/unified:
+    post:
+      tags: [Search]
+      summary: Unified hybrid search
+      operationId: unifiedSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnifiedSearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  search_id:
+                    type: string
+                    format: uuid
+                  query:
+                    type: string
+                  strategy:
+                    type: string
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  query_expansions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QueryExpansion'
+                  aggregated_result:
+                    $ref: '#/components/schemas/SearchResult'
+                  execution_time:
+                    type: number
+                  analytics:
+                    $ref: '#/components/schemas/SearchAnalytics'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/search/semantic:
+    post:
+      tags: [Search]
+      summary: Semantic search
+      operationId: semanticSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SemanticSearchRequest'
+      responses:
+        '200':
+          description: Semantic search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  search_type:
+                    type: string
+                    example: "semantic"
+                  query:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/search/keyword:
+    post:
+      tags: [Search]
+      summary: Keyword search
+      operationId: keywordSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KeywordSearchRequest'
+      responses:
+        '200':
+          description: Keyword search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  search_type:
+                    type: string
+                    example: "keyword"
+                  query:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/search/knowledge-graph:
+    post:
+      tags: [Search]
+      summary: Knowledge graph search
+      operationId: knowledgeGraphSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KnowledgeGraphSearchRequest'
+      responses:
+        '200':
+          description: Knowledge graph search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  search_type:
+                    type: string
+                    example: "knowledge_graph"
+                  entity:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/search/personalized:
+    post:
+      tags: [Personalized Search]
+      summary: Personalized search
+      operationId: personalizedSearch
+      security:
+        - BearerAuth: []
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonalizedSearchRequest'
+      responses:
+        '200':
+          description: Personalized search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                    format: uuid
+                  query:
+                    type: string
+                  personalized_results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SearchResult'
+                  personalization_applied:
+                    type: boolean
+                  personalization_level:
+                    type: number
+                    minimum: 0
+                    maximum: 1
+                  execution_time:
+                    type: number
+                  user_expertise_domains:
+                    type: object
+                    additionalProperties:
+                      type: number
+                  privacy_anonymized:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/search/suggestions:
+    post:
+      tags: [Personalized Search]
+      summary: Get query suggestions
+      operationId: getQuerySuggestions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuerySuggestionRequest'
+      responses:
+        '200':
+          description: Query suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partial_query:
+                    type: string
+                  suggestions:
+                    type: array
+                    items:
+                      type: string
+                  personalized:
+                    type: boolean
+                  privacy_anonymized:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/documents/index:
+    post:
+      tags: [Documents]
+      summary: Index a document
+      operationId: indexDocument
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexDocumentRequest'
+      responses:
+        '200':
+          description: Document indexed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  document_id:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/documents/batch-index:
+    post:
+      tags: [Documents]
+      summary: Index multiple documents
+      operationId: batchIndexDocuments
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchIndexDocumentsRequest'
+      responses:
+        '200':
+          description: Batch indexing results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: boolean
+                  total_documents:
+                    type: integer
+                  successful_indexed:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/documents/{document_id}:
+    delete:
+      tags: [Documents]
+      summary: Remove document from index
+      operationId: removeDocument
+      parameters:
+        - name: document_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Document removed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  document_id:
+                    type: string
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/user/feedback:
+    post:
+      tags: [User Management]
+      summary: Track user feedback
+      operationId: trackUserFeedback
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserFeedback'
+      responses:
+        '200':
+          description: Feedback tracked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  privacy_anonymized:
+                    type: boolean
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/user/consent:
+    post:
+      tags: [User Management]
+      summary: Manage user consent
+      operationId: manageUserConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsentRequest'
+      responses:
+        '200':
+          description: Consent recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  consent_recorded:
+                    type: boolean
+                  consent_timestamp:
+                    type: string
+                    format: date-time
+                  data_purposes:
+                    type: array
+                    items:
+                      type: string
+                  privacy_anonymized:
+                    type: boolean
+
+  /api/v1/user/privacy:
+    post:
+      tags: [User Management]
+      summary: Set privacy preferences
+      operationId: setPrivacyPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrivacyConfig'
+      responses:
+        '200':
+          description: Privacy preferences updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  privacy_config:
+                    $ref: '#/components/schemas/PrivacyConfig'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/user/privacy/{user_id}:
+    get:
+      tags: [User Management]
+      summary: Get privacy preferences
+      operationId: getPrivacyPreferences
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Privacy preferences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  privacy_config:
+                    $ref: '#/components/schemas/PrivacyConfig'
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/analytics:
+    get:
+      tags: [Analytics]
+      summary: Get search analytics
+      operationId: getSearchAnalytics
+      responses:
+        '200':
+          description: Analytics data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  engine_analytics:
+                    type: object
+                  recent_sessions:
+                    type: array
+                    items:
+                      type: object
+                  active_connections:
+                    type: integer
+                  total_sessions:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/v1/health:
+    get:
+      tags: [Health Check]
+      summary: Detailed health check
+      operationId: detailedHealthCheck
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  response_time:
+                    type: number
+                  document_count:
+                    type: integer
+                  active_connections:
+                    type: integer
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /ws/search:
+    websocket:
+      tags: [WebSocket]
+      summary: Real-time search WebSocket
+      operationId: websocketSearch
+      description: |
+        WebSocket endpoint for real-time search interactions.
+
+        **Message Format:**
+        ```json
+        {
+          "type": "search",
+          "query": "search query",
+          "strategy": "unified",
+          "top_k": 10
+        }
+        ```
+
+        **Response Format:**
+        ```json
+        {
+          "type": "results",
+          "search_id": "uuid",
+          "results": [...],
+          "execution_time": 0.123
+        }
+        ```
+
+  /ws/personalized-search:
+    websocket:
+      tags: [WebSocket]
+      summary: Real-time personalized search WebSocket
+      operationId: websocketPersonalizedSearch
+      description: |
+        WebSocket endpoint for real-time personalized search.
+        Requires user authentication and consent.
+
+components:
+  schemas:
+    Customer:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 123
+        name:
+          type: string
+          example: "Acme Corporation"
+        email:
+          type: string
+          format: email
+          example: "contact@acme.com"
+        phone:
+          type: string
+          example: "+1-555-0123"
+        address:
+          type: string
+          example: "123 Business St, Suite 100, San Francisco, CA 94105"
+        status:
+          type: string
+          enum: [active, inactive, prospect]
+          example: "active"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    KnowledgeEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 456
+        title:
+          type: string
+          example: "How to integrate payment gateway"
+        content:
+          type: string
+          example: "To integrate a payment gateway, follow these steps..."
+        category:
+          type: string
+          example: "Integration"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["payment", "integration", "api"]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    KnowledgeEntryCreate:
+      type: object
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          example: "New knowledge entry"
+        content:
+          type: string
+          example: "Knowledge entry content..."
+        category:
+          type: string
+          example: "General"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["tag1", "tag2"]
+
+    KnowledgeEntryUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    UnifiedSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query
+          example: "machine learning algorithms"
+        search_strategy:
+          type: string
+          enum: [unified, semantic, keyword, graph, auto]
+          default: unified
+          description: Search strategy to use
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Number of results to return
+        similarity_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+          description: Similarity threshold for results
+        rerank:
+          type: boolean
+          default: true
+          description: Whether to apply reranking
+        include_metadata:
+          type: boolean
+          default: true
+          description: Whether to include metadata in results
+        filters:
+          type: object
+          description: Search filters
+          example:
+            category: "technical"
+            date_range: "last_30_days"
+
+    SemanticSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          example: "neural networks"
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        similarity_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+        filters:
+          type: object
+          description: Search filters
+
+    KeywordSearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          example: "API integration"
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        similarity_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+        filters:
+          type: object
+          description: Search filters
+
+    KnowledgeGraphSearchRequest:
+      type: object
+      required:
+        - entity_name
+      properties:
+        entity_name:
+          type: string
+          description: Entity name to search for
+          example: "Artificial Intelligence"
+        relation_type:
+          type: string
+          description: Type of relation to follow
+          example: "related_to"
+        direction:
+          type: string
+          enum: [forward, backward, both]
+          default: both
+          description: Search direction
+        max_depth:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 3
+          description: Maximum depth for graph traversal
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Number of results to return
+
+    PersonalizedSearchRequest:
+      type: object
+      required:
+        - query
+        - user_id
+      properties:
+        query:
+          type: string
+          description: Search query
+          example: "best practices for API design"
+        user_id:
+          type: string
+          description: User identifier
+          example: "user_12345"
+        session_id:
+          type: string
+          description: Session identifier
+          example: "sess_67890"
+        search_strategy:
+          type: string
+          enum: [unified, semantic, keyword, graph, auto]
+          default: unified
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        similarity_threshold:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+        personalization_level:
+          type: number
+          minimum: 0
+          maximum: 1
+          default: 0.7
+          description: Personalization strength (0=none, 1=maximum)
+        boost_expertise:
+          type: boolean
+          default: true
+          description: Boost based on user expertise
+        boost_history:
+          type: boolean
+          default: true
+          description: Boost based on search history
+        boost_preferences:
+          type: boolean
+          default: true
+          description: Boost based on content preferences
+        filters:
+          type: object
+          description: Search filters
+
+    QuerySuggestionRequest:
+      type: object
+      required:
+        - user_id
+        - partial_query
+      properties:
+        user_id:
+          type: string
+          example: "user_12345"
+        partial_query:
+          type: string
+          description: Partial query for suggestions
+          example: "machine lea"
+        max_suggestions:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 5
+          description: Maximum number of suggestions
+
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "doc_123"
+        title:
+          type: string
+          example: "Introduction to Machine Learning"
+        content:
+          type: string
+          example: "Machine learning is a subset of artificial intelligence..."
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.89
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            category: "AI/ML"
+            author: "John Doe"
+            published_date: "2024-01-15"
+        source_type:
+          type: string
+          enum: [semantic, keyword, knowledge_graph]
+          example: "semantic"
+        explanation:
+          type: string
+          description: Explanation of why this result was returned
+          example: "High semantic similarity to query about machine learning"
+
+    QueryExpansion:
+      type: object
+      properties:
+        original_term:
+          type: string
+          example: "ML"
+        expanded_terms:
+          type: array
+          items:
+            type: string
+          example: ["machine learning", "machine learning algorithms"]
+        expansion_type:
+          type: string
+          enum: [synonym, abbreviation, related, hypernym, hyponym]
+          example: "abbreviation"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          example: 0.95
+
+    SearchAnalytics:
+      type: object
+      properties:
+        query_complexity:
+          type: string
+          enum: [simple, moderate, complex]
+          example: "moderate"
+        total_results:
+          type: integer
+          example: 25
+        search_time_ms:
+          type: number
+          example: 123.45
+        cache_hit:
+          type: boolean
+          example: false
+        semantic_score_avg:
+          type: number
+          example: 0.78
+        keyword_score_avg:
+          type: number
+          example: 0.65
+        graph_traversal_depth:
+          type: integer
+          example: 2
+
+    IndexDocumentRequest:
+      type: object
+      required:
+        - document_id
+        - title
+        - content
+      properties:
+        document_id:
+          type: string
+          example: "doc_12345"
+        title:
+          type: string
+          example: "API Documentation"
+        content:
+          type: string
+          example: "This document describes the API endpoints..."
+        metadata:
+          type: object
+          description: Document metadata
+          example:
+            author: "API Team"
+            version: "1.0.0"
+            category: "Documentation"
+
+    BatchIndexDocumentsRequest:
+      type: object
+      required:
+        - documents
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndexDocumentRequest'
+          minItems: 1
+          maxItems: 1000
+
+    UserFeedback:
+      type: object
+      required:
+        - user_id
+        - session_id
+        - result_id
+        - feedback_type
+      properties:
+        user_id:
+          type: string
+          example: "user_12345"
+        session_id:
+          type: string
+          example: "sess_67890"
+        result_id:
+          type: string
+          example: "result_abc"
+        feedback_type:
+          type: string
+          enum: [click, satisfaction, rating]
+          example: "click"
+        dwell_time:
+          type: number
+          minimum: 0
+          default: 0
+          description: Time spent on result in seconds
+          example: 45.2
+        satisfaction_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Satisfaction score
+          example: 0.8
+
+    ConsentRequest:
+      type: object
+      required:
+        - user_id
+        - consent_given
+        - consent_text
+      properties:
+        user_id:
+          type: string
+          example: "user_12345"
+        consent_given:
+          type: boolean
+          description: Whether consent is given
+        consent_text:
+          type: string
+          description: Consent text description
+          example: "I consent to personalized search and data processing"
+        data_purposes:
+          type: array
+          items:
+            type: string
+          description: Purposes of data processing
+          example: ["personalization", "analytics", "improvement"]
+
+    PrivacyConfig:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          example: "user_12345"
+        tracking_enabled:
+          type: boolean
+          default: true
+          description: Enable behavior tracking
+        query_history_retention_days:
+          type: integer
+          minimum: 1
+          maximum: 365
+          default: 30
+          description: Query history retention in days
+        click_tracking_enabled:
+          type: boolean
+          default: true
+          description: Enable click tracking
+        expertise_learning_enabled:
+          type: boolean
+          default: true
+          description: Enable expertise learning
+        personalization_enabled:
+          type: boolean
+          default: true
+          description: Enable result personalization
+        data_anonymization_enabled:
+          type: boolean
+          default: true
+          description: Enable data anonymization
+        auto_delete_after_days:
+          type: integer
+          minimum: 1
+          maximum: 2550
+          default: 365
+          description: Auto-delete data after days
+        gdpr_compliant:
+          type: boolean
+          default: true
+          description: GDPR compliance
+        ccpa_compliant:
+          type: boolean
+          default: true
+          description: CCPA compliance
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+          example:
+            error: "Bad Request"
+            message: "Invalid input parameters"
+            timestamp: "2024-01-15T10:30:00Z"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+          example:
+            error: "Unauthorized"
+            message: "Authentication required or consent not given"
+            timestamp: "2024-01-15T10:30:00Z"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+          example:
+            error: "Not Found"
+            message: "Requested resource not found"
+            timestamp: "2024-01-15T10:30:00Z"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+              message:
+                type: string
+              timestamp:
+                type: string
+                format: date-time
+          example:
+            error: "Internal Server Error"
+            message: "An unexpected error occurred"
+            timestamp: "2024-01-15T10:30:00Z"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+# Example usage in different programming languages can be found in the documentation
+examples:
+  PythonClient:
+    summary: Python client example
+    value:
+      $ref: '#/components/examples/PythonClientExample'
+
+  JavaScriptClient:
+    summary: JavaScript client example
+    value:
+      $ref: '#/components/examples/JavaScriptClientExample'
+
+components:
+  examples:
+    PythonClientExample:
+      summary: Python SDK usage
+      value: |
+        ```python
+        from knowledge_base_sdk import KnowledgeBaseClient
+
+        # Initialize client
+        client = KnowledgeBaseClient(
+            base_url="http://localhost:8000",
+            api_key="your-api-key"
+        )
+
+        # Perform unified search
+        results = client.search.unified(
+            query="machine learning algorithms",
+            search_strategy="unified",
+            top_k=10
+        )
+
+        # Index a document
+        client.documents.index(
+            document_id="doc_123",
+            title="ML Guide",
+            content="Machine learning guide content..."
+        )
+
+        # Personalized search
+        personalized_results = client.search.personalized(
+            query="best practices",
+            user_id="user_123",
+            personalization_level=0.8
+        )
+        ```
+
+    JavaScriptClientExample:
+      summary: JavaScript/TypeScript SDK usage
+      value: |
+        ```javascript
+        import { KnowledgeBaseClient } from '@knowledge-base/sdk';
+
+        // Initialize client
+        const client = new KnowledgeBaseClient({
+          baseURL: 'http://localhost:8000',
+          apiKey: 'your-api-key'
+        });
+
+        // Perform semantic search
+        const results = await client.search.semantic({
+          query: 'neural networks',
+          topK: 10,
+          threshold: 0.7
+        });
+
+        // Index multiple documents
+        await client.documents.batchIndex([
+          {
+            documentId: 'doc-1',
+            title: 'API Guide',
+            content: 'API documentation...'
+          },
+          {
+            documentId: 'doc-2',
+            title: 'Tutorial',
+            content: 'Step-by-step tutorial...'
+          }
+        ]);
+
+        // Real-time search with WebSocket
+        const ws = client.websocket.search();
+        ws.on('results', (data) => {
+          console.log('Search results:', data.results);
+        });
+
+        ws.send({
+          type: 'search',
+          query: 'real-time search',
+          strategy: 'unified'
+        });
+        ```
