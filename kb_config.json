@@ -1,0 +1,17 @@
+{
+  "database_path": "knowledge_base.db",
+  "backup_dir": "backups",
+  "max_backups": 10,
+  "auto_backup_interval": 24,
+  "supported_formats": [
+    ".txt",
+    ".md",
+    ".pdf",
+    ".docx",
+    ".html",
+    ".json"
+  ],
+  "indexing_enabled": true,
+  "performance_monitoring": true,
+  "log_level": "INFO"
+}
