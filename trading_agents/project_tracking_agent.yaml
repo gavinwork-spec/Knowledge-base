@@ -1,0 +1,485 @@
+name: project_tracking_agent
+description: 智能项目跟踪管理专家 - 看板式订单管理与客户服务优化系统
+version: 2.0
+type: project_management_specialist
+
+# 业务核心定位
+business_focus:
+  primary_function: "端到端订单跟踪与客户服务优化"
+  trading_workflow_stage: "订单执行 → 生产协调 → 交付管理 → 客户满意"
+  service_targets:
+    on_time_delivery: "95%准时交付率"
+    customer_satisfaction: "98%+客户满意度"
+    project_visibility: "100%项目透明度"
+
+# 看板项目管理系统
+kanban_system:
+  # 项目阶段定义
+  project_stages:
+    inquiry_stage:
+      name: "询价阶段"
+      color: "#6366f1"
+      key_metrics: ["询价数量", "转化率", "平均响应时间"]
+      automation: "自动分配销售代表"
+
+    quotation_stage:
+      name: "报价阶段"
+      color: "#8b5cf6"
+      key_metrics: ["报价数量", "报价成功率", "平均报价时间"]
+      automation: "技术评估 + 价格计算"
+
+    order_confirmation:
+      name: "订单确认"
+      color: "#ec4899"
+      key_metrics: ["订单数量", "订单金额", "确认周期"]
+      automation: "合同生成 + 预付款检查"
+
+    production_scheduling:
+      name: "生产排期"
+      color: "#f59e0b"
+      key_metrics: ["排期准确率", "生产周期", "供应商匹配"]
+      automation: "供应商协调 + 生产计划"
+
+    manufacturing:
+      name: "生产制造"
+      color: "#84cc16"
+      key_metrics: ["生产进度", "质量合格率", "工序完成度"]
+      automation: "进度跟踪 + 质量监控"
+
+    quality_inspection:
+      name: "质量检验"
+      color: "#10b981"
+      key_metrics: ["检验完成率", "合格率", "返工率"]
+      automation: "检验计划 + 报告生成"
+
+    packaging_shipment:
+      name: "包装发货"
+      color: "#06b6d4"
+      key_metrics: ["发货准时率", "包装合格率", "物流跟踪"]
+      automation: "发货通知 + 物流集成"
+
+    delivery_completion:
+      name: "交付完成"
+      color: "#22c55e"
+      key_metrics: ["交付准时率", "客户签收", "项目结算"]
+      automation: "交付确认 + 发票生成"
+
+    after_sales:
+      name: "售后服务"
+      color: "#059669"
+      key_metrics: ["客户满意度", "问题处理率", "重复订单率"]
+      automation: "满意度调查 + 跟进提醒"
+
+# 实时监控系统
+triggers:
+  # 项目状态监控
+  project_monitoring:
+    schedule:
+      cron: "*/5 * * * *"  # 每5分钟检查
+      timezone: "Asia/Shanghai"
+    priority: "high"
+
+  # 里程碑检查
+  milestone_tracking:
+    schedule:
+      cron: "0 */2 * * *"  # 每2小时检查
+    priority: "medium"
+
+  # 延误预警
+  delay_prediction:
+    schedule:
+      cron: "0 */4 * * *"  # 每4小时预测
+    priority: "high"
+
+  # 客户通知
+  customer_updates:
+    schedule:
+      cron: "0 9,17 * * *"  # 每日9点和17点
+      timezone: "Asia/Shanghai"
+
+# 里程碑跟踪系统
+milestone_tracking:
+  # 标准里程碑模板
+  milestone_templates:
+    standard_project:
+      - name: "技术确认完成"
+        estimated_duration: "2 days"
+        dependencies: ["图纸分析", "标准确认"]
+        alerts: ["延期预警", "客户通知"]
+
+      - name: "报价完成"
+        estimated_duration: "1 day"
+        dependencies: ["成本核算", "供应商确认"]
+        alerts: ["价格变动提醒"]
+
+      - name: "订单确认"
+        estimated_duration: "1 day"
+        dependencies: ["合同签署", "预付款到账"]
+        alerts: ["付款状态提醒"]
+
+      - name: "生产启动"
+        estimated_duration: "0 days"
+        dependencies: ["原材料到货", "产能安排"]
+        alerts: ["生产计划变更"]
+
+      - name: "生产完成50%"
+        estimated_duration: "varies"
+        dependencies: ["加工工序完成50%"]
+        alerts: ["进度预警"]
+
+      - name: "生产完成100%"
+        estimated_duration: "0 days"
+        dependencies: ["所有工序完成"]
+        alerts: ["完成通知"]
+
+      - name: "质量检验完成"
+        estimated_duration: "1 day"
+        dependencies: ["全检完成", "报告生成"]
+        alerts: ["质量问题预警"]
+
+      - name: "发货准备完成"
+        estimated_duration: "1 day"
+        dependencies: ["包装完成", "单据准备"]
+        alerts: ["发货提醒"]
+
+      - name: "客户签收"
+        estimated_duration: "varies"
+        dependencies: ["物流送达", "客户验收"]
+        alerts: ["签收确认"]
+
+  # 动态里程碑调整
+  dynamic_adjustment:
+    real_time_updates: true
+    auto_recalculation: true
+    buffer_time: "10%"
+    critical_path_analysis: true
+
+# 延误预测系统
+delay_prediction:
+  # 预测模型
+  prediction_models:
+    machine_learning:
+      algorithm: "RandomForest + TimeSeries"
+      training_data: "24 months历史数据"
+      features:
+        - "供应商历史表现"
+        - "季节性因素"
+        - "原材料供应情况"
+        - "生产复杂度"
+        - "运输距离"
+      accuracy_target: "85%+"
+
+    rule_based:
+      risk_factors:
+        - "供应商延期记录 > 15%"
+        - "原材料价格波动 > 10%"
+        - "质量检验不合格率 > 5%"
+        - "运输距离 > 1000km"
+
+  # 风险等级
+  risk_levels:
+    low_risk: "延误概率 < 10%"
+    medium_risk: "延误概率 10-25%"
+    high_risk: "延误概率 25-50%"
+    critical_risk: "延误概率 > 50%"
+
+  # 预警机制
+  early_warning:
+    prediction_horizon: "7 days"
+    warning_frequency: "daily update"
+    escalation_rules:
+      "high_risk": "立即通知项目经理"
+      "critical_risk": "立即通知管理层"
+
+# 自动化状态更新
+automated_updates:
+  # 数据源集成
+  data_sources:
+    erp_system:
+      production_progress: "实时进度更新"
+      inventory_status: "原材料和成品库存"
+      quality_results: "检验数据"
+
+    supplier_apis:
+      manufacturing_status: "供应商生产进度"
+      quality_reports: "供应商质检报告"
+      shipping_updates: "发货状态"
+
+    logistics_providers:
+      tracking_data: "物流跟踪信息"
+      delivery_status: "配送状态"
+      exceptions: "异常情况"
+
+    customer_feedback:
+      satisfaction_surveys: "客户满意度"
+      issue_reports: "问题反馈"
+      acceptance_confirmations: "验收确认"
+
+  # 更新规则
+  update_rules:
+    automatic_progression:
+      condition: "前一阶段完成 + 必要条件满足"
+      action: "自动进入下一阶段"
+      notification: "相关团队通知"
+
+    manual_review_required:
+      condition: "质量不达标 / 客户拒绝"
+      action: "暂停项目，等待人工处理"
+      notification: "紧急通知管理层"
+
+# 客户通知系统
+customer_notifications:
+  # 通知渠道
+  communication_channels:
+    email:
+      template_based: true
+      personalization: "客户偏好"
+      scheduling: "最优发送时间"
+
+    sms:
+      urgent_updates: true
+      delivery_confirmations: true
+      delay_alerts: true
+
+    wechat:
+      chinese_customers: true
+      progress_updates: true
+      interactive_support: true
+
+    customer_portal:
+      real_time_dashboard: true
+      document_access: true
+      communication_history: true
+
+  # 通知内容模板
+  notification_templates:
+    project_started:
+      subject: "项目启动通知 - {project_name}"
+      content: "尊敬的{customer_name}，您的项目{project_name}已正式启动..."
+
+    milestone_reached:
+      subject: "项目里程碑更新 - {milestone_name}"
+      content: "好消息！您的项目已完成{milestone_name}..."
+
+    delay_warning:
+      subject: "重要：项目进度更新"
+      content: "我们预测项目可能存在{delay_days}天的延误..."
+
+    delivery_notification:
+      subject: "发货通知 - 订单{order_number}"
+      content: "您的订单已发货，跟踪号码：{tracking_number}..."
+
+    project_completed:
+      subject: "项目完成确认"
+      content: "恭喜！您的项目已成功交付..."
+
+# 供应商协调系统
+supplier_coordination:
+  # 供应商管理
+  supplier_management:
+    performance_tracking:
+      on_time_delivery_rate: "准时交付率"
+      quality_acceptance_rate: "质量合格率"
+      communication_effectiveness: "沟通效率"
+      price_competitiveness: "价格竞争力"
+
+    collaboration_tools:
+      shared_dashboard: "供应商可见项目状态"
+      document_sharing: "技术文档共享"
+      communication_portal: "直接沟通渠道"
+
+  # 生产排程协调
+  production_coordination:
+    capacity_planning:
+      real_time_capacity: "实时产能监控"
+      bottleneck_identification: "瓶颈识别"
+      load_balancing: "负载均衡"
+
+    supply_chain_sync:
+      material_requirements: "物料需求计划"
+      just_in_time_delivery: "准时化交付"
+      buffer_stock: "安全库存管理"
+
+# 文档管理系统
+document_management:
+  # 文档类型
+  document_categories:
+    commercial_documents:
+      - "销售合同"
+      - "采购订单"
+      - "发票"
+      - "信用证"
+
+    technical_documents:
+      - "产品图纸"
+      - "技术规格"
+      - "质量标准"
+      - "检验报告"
+
+    logistic_documents:
+      - "装箱单"
+      - "提货单"
+      - "原产地证书"
+      - "保险单"
+
+    quality_documents:
+      - "材质证明"
+      - "检验证书"
+      - "测试报告"
+      - "合规证明"
+
+  # 文档生命周期
+  document_lifecycle:
+    generation:
+      auto_generation: "基于模板自动生成"
+      digital_signatures: "电子签名"
+      version_control: "版本管理"
+
+    storage:
+      cloud_storage: "云端存储"
+      backup_strategy: "备份策略"
+      access_control: "权限控制"
+
+    sharing:
+      secure_sharing: "安全共享"
+      expiration_controls: "访问期限"
+      audit_trail: "访问记录"
+
+# 质量控制跟踪
+quality_tracking:
+  # 质量检查点
+  quality_checkpoints:
+    incoming_materials:
+      inspection_type: "来料检验"
+      standards: "GB/T 19001"
+      acceptance_criteria: "AQL 1.0"
+
+    in_process:
+      inspection_type: "过程检验"
+      frequency: "按批次检验"
+      key_parameters: "尺寸、强度、表面处理"
+
+    final_inspection:
+      inspection_type: "成品检验"
+      standards: "ISO 898"
+      testing_methods: "全检 + 抽检"
+
+    customer_acceptance:
+      inspection_type: "客户验收"
+      documentation: "完整检验报告"
+      certification: "合格证书"
+
+  # 质量数据分析
+  quality_analytics:
+    defect_tracking: "缺陷跟踪分析"
+    trend_analysis: "质量趋势分析"
+    supplier_quality: "供应商质量评估"
+    improvement_suggestions: "改进建议"
+
+# 利润分析系统
+profitability_analysis:
+  # 成本跟踪
+  cost_tracking:
+    material_costs: "实时材料成本"
+    processing_costs: "加工成本"
+    quality_costs: "质量成本"
+    logistic_costs: "物流成本"
+    overhead_costs: "管理费用"
+
+  # 收入分析
+  revenue_analysis:
+    contract_value: "合同价值"
+    change_orders: "变更订单"
+      payment_terms: "付款条件"
+    revenue_recognition: "收入确认"
+
+  # 利润计算
+  profit_calculation:
+    gross_margin: "毛利率"
+    net_margin: "净利率"
+    roi_analysis: "投资回报率"
+    profitability_by_customer: "客户利润分析"
+    profitability_by_product: "产品利润分析"
+
+# 实时仪表板
+real_time_dashboard:
+  # 项目概览
+  project_overview:
+    total_projects: "项目总数"
+    active_projects: "进行中项目"
+    completed_projects: "已完成项目"
+    delayed_projects: "延期项目"
+
+  # 关键指标
+  key_metrics:
+    on_time_delivery_rate: "准时交付率"
+    customer_satisfaction_score: "客户满意度"
+    average_project_duration: "平均项目周期"
+    profit_margin: "利润率"
+
+  # 警报系统
+  alert_system:
+    critical_alerts: "关键警报"
+    warning_alerts: "预警提醒"
+    information_alerts: "信息通知"
+
+# 系统集成
+integration_points:
+  crm_system:
+    customer_data: "客户信息同步"
+    opportunity_tracking: "商机跟踪"
+    communication_history: "沟通记录"
+
+  erp_system:
+    financial_data: "财务数据"
+    inventory_management: "库存管理"
+    production_planning: "生产计划"
+
+  accounting_system:
+    cost_tracking: "成本跟踪"
+    invoicing: "发票管理"
+    payment_processing: "付款处理"
+
+  supplier_portal:
+      order_placement: "订单下达"
+      status_updates: "状态更新"
+      performance_tracking: "表现跟踪"
+
+# 移动端支持
+mobile_support:
+    features:
+      real_time_notifications: "实时通知"
+      mobile_dashboard: "移动仪表板"
+      document_access: "文档访问"
+      communication_tools: "沟通工具"
+
+    supported_platforms:
+      - "iOS App"
+      - "Android App"
+      - "Web Mobile"
+
+# 性能优化
+performance:
+    response_time: "<2 seconds"
+    concurrent_users: "100+"
+    data_refresh: "实时更新"
+    uptime_target: "99.9%"
+
+# 数据安全和合规
+security:
+    data_encryption: "AES-256"
+    access_control: "基于角色的访问控制"
+    audit_logging: "完整的审计日志"
+    compliance_standards: ["ISO 27001", "GDPR"]
+
+# 学习和改进
+machine_learning:
+    delay_prediction:
+        model: "基于历史数据的预测模型"
+        accuracy_target: "90%+"
+        continuous_learning: true
+
+    supplier_performance:
+        rating_system: "动态评分系统"
+        recommendation_engine: "供应商推荐"
+        risk_assessment: "风险评估"

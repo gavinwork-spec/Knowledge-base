@@ -1,0 +1,251 @@
+name: fastener_drawing_analysis_agent
+description: 智能紧固件图纸分析专家 - 专为贸易公司快速报价和技术可行性评估设计
+version: 2.0
+type: trading_specialist
+
+# 紧固件业务专精
+business_focus:
+  primary_function: "技术可行性评估与快速报价支持"
+  trading_workflow_stage: "询价处理 → 技术评估 → 供应商匹配"
+  response_time_target: "15分钟内完成初步分析"
+  output_priority: "报价准确性 > 技术细节完整性"
+
+# 多触发器设计 - 适应贸易公司快节奏
+triggers:
+  # 客户询价触发 - 最高优先级
+  customer_inquiry:
+    event_type: "new_drawing_received"
+    priority: "urgent"
+    sources:
+      - email_attachments
+      - web_upload
+      - whatsapp_files
+      - wechat_files
+    file_types: [".pdf", ".dwg", ".dxf", ".step", ".stp", ".jpg", ".png"]
+
+  # 批量处理 - 中等优先级
+  batch_processing:
+    schedule:
+      cron: "*/30 * * * *"  # 每30分钟
+      timezone: "Asia/Shanghai"
+    condition: "pending_drawings > 0"
+
+  # 定期标准库更新
+  knowledge_update:
+    schedule:
+      cron: "0 2 * * *"  # 每日凌晨2点
+      action: "update_fastener_standards"
+
+# 核心技术能力栈
+technical_capabilities:
+  # OCR文字识别引擎
+  ocr_engine:
+    primary: "PaddleOCR"
+    languages: ["en", "zh", "es", "de", "fr"]
+    specialization: "技术图纸文字和数字识别"
+    accuracy_target: "95%+ for dimensions and specifications"
+
+  # CAD文件解析
+  cad_parser:
+    api: "FreeCAD Python API"
+    supported_formats: [".dwg", ".dxf", ".step", ".stp", ".iges"]
+    extraction_capabilities:
+      - "几何尺寸和公差"
+      - "材料规格"
+      - "表面粗糙度"
+      - "焊接和装配要求"
+
+  # 紧固件标准库
+  standards_database:
+    coverage:
+      international: ["ISO", "IEC"]
+      european: ["DIN", "EN"]
+      american: ["ANSI", "ASTM", "SAE"]
+      chinese: ["GB", "JB"]
+      japanese: ["JIS"]
+    auto_recognition: true
+    cross_reference: true
+
+# 智能分析流程
+analysis_pipeline:
+  stage_1: "preprocessing"
+    actions:
+      - file_format_validation
+      - image_quality_enhancement
+      - drawing_orientation_correction
+
+  stage_2: "information_extraction"
+    parallel_processing:
+      - ocr_text_extraction
+      - cad_geometric_analysis
+      - standard_pattern_matching
+      - material_specification_detection
+
+  stage_3: "fastener_classification"
+    classification_logic:
+      bolt_types:
+        - "hex_bolts"      # 六角螺栓
+        - "socket_bolts"   # 内六角螺栓
+        - "carriage_bolts" # 马车螺栓
+        - "lag_bolts"      # 方头螺栓
+        - "eye_bolts"      # 吊环螺栓
+        - "foundation_bolts" # 地脚螺栓
+
+      nut_types:
+        - "hex_nuts"       # 六角螺母
+        - "lock_nuts"      # 锁紧螺母
+        - "wing_nuts"      # 蝶形螺母
+        - "cap_nuts"       # 盖形螺母
+
+      screw_types:
+        - "machine_screws" # 机螺丝
+        - "self_tapping"   # 自攻螺丝
+        - "wood_screws"    # 木螺丝
+        - "sheet_metal"    # 板金螺丝
+
+  stage_4: "specification_analysis"
+    extraction_targets:
+      dimensions:
+        - "diameter"       # 直径 (M6, 1/4", etc.)
+        - "length"         # 长度
+        - "thread_pitch"   # 螺距
+        - "head_size"      # 头部尺寸
+
+      material_specs:
+        - "material_grade" # 材料等级
+        - "strength_class" # 强度等级 (4.8, 8.8, 12.9)
+        - "surface_treatment" # 表面处理
+
+      tolerances:
+        - "dimensional_tolerance" # 尺寸公差
+        - "geometric_tolerance"   # 形位公差
+        - "surface_roughness"     # 表面粗糙度
+
+# 贸易公司特定的输出配置
+outputs:
+  # 快速报价输出 - 15分钟内
+  quick_quote:
+    format: "structured_json"
+    delivery_time: "15 minutes"
+    content:
+      product_classification: "产品分类结果"
+      specification_summary: "规格参数汇总"
+      manufacturability_assessment: "可制造性评估"
+      rough_cost_range: "成本区间估算"
+      recommended_suppliers: "推荐供应商列表"
+      production_lead_time: "预计交货期"
+
+  # 详细技术报告 - 1小时内
+  technical_report:
+    format: "pdf"
+    delivery_time: "1 hour"
+    content:
+      detailed_analysis: "详细技术分析"
+      compliance_check: "标准符合性检查"
+      quality_requirements: "质量要求分析"
+      risk_assessment: "技术和商务风险评估"
+      alternative_suggestions: "替代方案建议"
+
+# 供应商匹配系统
+supplier_matching:
+  database_criteria:
+    manufacturing_capabilities: "制造能力匹配"
+    quality_certifications: "质量认证要求"
+    location_preferences: "地理位置偏好"
+    price_competitiveness: "价格竞争力"
+    delivery_performance: "交货表现"
+
+  matching_algorithm:
+    weight_scoring:
+      technical_capability: 40%
+      price_level: 25%
+      delivery_time: 20%
+      quality_record: 15%
+
+  output_format:
+    - "tier_1_suppliers": "最优供应商 (3-5家)"
+    - "tier_2_suppliers": "备选供应商 (5-8家)"
+    - "quote_comparison_table": "报价对比表"
+
+# 质量标准和合规性检查
+quality_compliance:
+  check_standards:
+    - ISO 898: "紧固件机械性能标准"
+    - ISO 4759: "紧固件公差标准"
+    - ISO 4042: "紧固件表面处理标准"
+    - ASTM F593: "不锈钢紧固件标准"
+    - DIN 931: "六角螺栓标准"
+
+  auto_check_rules:
+    dimension_tolerance_validation: true
+    material_grade_verification: true
+    surface_treatment_compliance: true
+    strength_class_validation: true
+
+# 集成API配置
+external_apis:
+  # 材料价格API
+  material_pricing:
+    endpoint: "internal_raw_materials_api"
+    update_frequency: "hourly"
+
+  # 供应商库存API
+  supplier_inventory:
+    endpoints:
+      - "supplier_1_api"
+      - "supplier_2_api"
+    check_frequency: "real_time"
+
+# 性能优化配置
+performance:
+  concurrent_processing: 5
+  max_file_size: "50MB"
+  processing_timeout: 300  # 5分钟
+  cache_standards: true
+  gpu_acceleration: true  # OCR加速
+
+# 错误处理和回退策略
+error_handling:
+  low_confidence_ocr: "fallback_to_manual_review"
+  unsupported_file_format: "request_customer_converted_file"
+  ambiguous_specification: "request_clarification_email"
+  supplier_matching_failed: "expand_search_criteria"
+
+# 通知配置 - 贸易公司工作流
+notifications:
+  # 新询价通知 - 立即
+  new_inquiry:
+    channels: ["email", "wechat", "sms"]
+    recipients: ["sales_team", "technical_team"]
+    template: "new_inquiry_alert"
+
+  # 分析完成通知
+  analysis_complete:
+    channels: ["email", "internal_system"]
+    recipients: ["sales_rep", "customer"]
+    timing: "immediate"
+
+  # 需要人工审核
+  manual_review_required:
+    channels: ["email", "internal_messaging"]
+    recipients: ["senior_engineer", "sales_manager"]
+    urgency: "high"
+
+# 学习和改进机制
+learning_system:
+  successful_deals_analysis:
+    track: "成交案例分析"
+    learn: "成功模式识别"
+    improve: "匹配算法优化"
+
+  customer_feedback:
+    collect: "报价准确性反馈"
+    analyze: "客户满意度分析"
+    improve: "服务流程优化"
+
+# 数据安全和隐私
+security:
+  customer_data_encryption: true
+  supplier_data_protection: true
+  access_control: "role_based"
+  audit_trail: true

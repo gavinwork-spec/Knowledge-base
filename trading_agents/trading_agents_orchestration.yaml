@@ -1,0 +1,421 @@
+name: trading_agents_orchestration
+description: 紧固件贸易公司智能体编排系统 - 协同工作流程优化
+version: 2.0
+type: multi_agent_orchestrator
+
+# 系统概述
+system_overview:
+  business_model: "紧固件国际贸易公司"
+  primary_markets: ["automotive", "construction", "machinery", "aerospace"]
+  operational_scale: "年销售额 $10M+"
+  team_size: "20-50人"
+
+# 智能体生态系统
+agent_ecosystem:
+  # 四个核心智能体
+  agents:
+    fastener_drawing_analysis_agent:
+      role: "技术分析专家"
+      business_stage: "询价处理 → 技术评估"
+      key_capabilities: ["图纸识别", "规格提取", "供应商匹配"]
+      kpi_targets:
+        analysis_accuracy: "95%+"
+        response_time: "<15分钟"
+        supplier_match_rate: "80%+"
+
+    raw_materials_price_agent:
+      role: "成本控制分析师"
+      business_stage: "成本核算 → 报价策略"
+      key_capabilities: ["价格监控", "成本预测", "风险分析"]
+      kpi_targets:
+        price_accuracy: "90%+"
+        margin_protection: "95%+"
+        forecast_accuracy: "85%+"
+
+    customer_email_dfac_agent:
+      role: "客户关系管理师"
+      business_stage: "客户沟通 → 商机转化"
+      key_capabilities: ["邮件处理", "意图识别", "自动回复"]
+      kpi_targets:
+        response_rate: "100%"
+        response_time: "<2小时"
+        conversion_rate: "30%+"
+
+    project_tracking_agent:
+      role: "项目管理专家"
+      business_stage: "订单执行 → 交付完成"
+      key_capabilities: ["进度跟踪", "质量控制", "交付管理"]
+      kpi_targets:
+        on_time_delivery: "95%+"
+        customer_satisfaction: "98%+"
+        project_visibility: "100%"
+
+# 协同工作流程
+collaborative_workflows:
+  # 主要业务流程：客户询价到交付
+  inquiry_to_delivery_pipeline:
+    stage_1_customer_inquiry:
+      trigger: "customer_email_received"
+      primary_agent: "customer_email_dfac_agent"
+      actions:
+        - "邮件分类和优先级排序"
+        - "客户身份识别和情感分析"
+        - "紧急程度评估"
+        - "自动回复确认"
+
+      parallel_tasks:
+        - agent: "fastener_drawing_analysis_agent"
+          trigger: "drawing_attachment_detected"
+          actions:
+            - "图纸技术分析"
+            - "规格参数提取"
+            - "制造可行性评估"
+
+    stage_2_quotation_preparation:
+      trigger: "quotation_request_confirmed"
+      primary_agent: "raw_materials_price_agent"
+      dependencies:
+        - "technical_analysis_complete"
+        - "customer_requirements_clear"
+
+      actions:
+        - "实时材料成本核算"
+        - "供应商价格对比"
+        - "汇率和风险分析"
+        - "利润率计算"
+
+      collaboration:
+        - from: "fastener_drawing_analysis_agent"
+          data: "technical_specifications"
+          action: "manufacturing_cost_estimation"
+
+        - from: "customer_email_dfac_agent"
+          data: "customer_profile"
+          action: "pricing_strategy_adjustment"
+
+    stage_3_quote_delivery:
+      trigger: "cost_calculation_complete"
+      primary_agent: "customer_email_dfac_agent"
+      actions:
+        - "生成专业报价单"
+        - "多语言报价文档"
+        - "发送给客户"
+        - "设置跟进提醒"
+
+      integration:
+        - erp_system: "opportunity_creation"
+        - crm_system: "lead_scoring_update"
+
+    stage_4_order_confirmation:
+      trigger: "customer_order_received"
+      primary_agent: "project_tracking_agent"
+      actions:
+        - "创建项目档案"
+        - "设置看板阶段"
+        - "分配项目经理"
+        - "生成订单确认"
+
+      handoff:
+        - from: "raw_materials_price_agent"
+          data: "final_pricing"
+          action: "contract_value_calculation"
+
+    stage_5_production_management:
+      trigger: "production_planning_required"
+      primary_agent: "project_tracking_agent"
+      ongoing_collaboration:
+        - agent: "raw_materials_price_agent"
+          frequency: "daily"
+          purpose: "material_price_fluctuation_monitoring"
+
+        - agent: "fastener_drawing_analysis_agent"
+          frequency: "as_needed"
+          purpose: "technical_issue_resolution"
+
+    stage_6_delivery_completion:
+      trigger: "customer_acceptance_confirmed"
+      primary_agent: "project_tracking_agent"
+      actions:
+        - "项目收尾报告"
+        - "客户满意度调查"
+        - "财务结算确认"
+        - "项目归档"
+
+      feedback_loop:
+        - to: "customer_email_dfac_agent"
+          data: "customer_satisfaction_score"
+          action: "relationship_status_update"
+
+        - to: "fastener_drawing_analysis_agent"
+          data: "quality_issues_summary"
+          action: "technical_standards_update"
+
+# 数据流架构
+data_flow_architecture:
+  # 数据流向图
+  data_flows:
+    customer_input:
+      source: "customer_emails/portal"
+      processors: ["customer_email_dfac_agent"]
+      outputs: ["customer_request", "urgency_level", "customer_profile"]
+
+    technical_analysis:
+      source: "drawing_attachments"
+      processors: ["fastener_drawing_analysis_agent"]
+      outputs: ["technical_specs", "manufacturing_plan", "supplier_options"]
+
+    cost_calculation:
+      source: "technical_specs + market_data"
+      processors: ["raw_materials_price_agent"]
+      outputs: ["itemized_costs", "pricing_recommendation", "risk_assessment"]
+
+    project_execution:
+      source: "confirmed_orders"
+      processors: ["project_tracking_agent"]
+      outputs: ["project_status", "quality_reports", "delivery_confirmations"]
+
+  # 共享数据存储
+  shared_data_stores:
+    customer_database:
+      owner: "customer_email_dfac_agent"
+      readers: ["all_agents"]
+      data_types: ["customer_info", "interaction_history", "preferences"]
+
+    pricing_database:
+      owner: "raw_materials_price_agent"
+      readers: ["fastener_drawing_analysis_agent", "project_tracking_agent"]
+      data_types: ["material_costs", "supplier_prices", "historical_quotes"]
+
+    technical_library:
+      owner: "fastener_drawing_analysis_agent"
+      readers: ["all_agents"]
+      data_types: ["product_specs", "standards_library", "manufacturing_capabilities"]
+
+    project_database:
+      owner: "project_tracking_agent"
+      readers: ["customer_email_dfac_agent"]
+      data_types: ["project_status", "delivery_timeline", "quality_metrics"]
+
+# 智能体间通信协议
+communication_protocols:
+  # 同步通信
+  synchronous_communication:
+    request_response:
+      - "quotation_price_inquiry"
+      - "technical_specification_clarification"
+      - "project_status_query"
+      - "customer_preference_inquiry"
+
+    timeout_settings:
+      urgent_requests: "30 seconds"
+      normal_requests: "2 minutes"
+      batch_requests: "10 minutes"
+
+  # 异步通信
+  asynchronous_communication:
+    event_notifications:
+      - "customer_inquiry_received"
+      - "drawing_analysis_completed"
+      - "price_volatility_alert"
+      - "project_milestone_reached"
+      - "delivery_confirmation"
+
+    message_queue:
+      technology: "RabbitMQ"
+      priority_levels: ["critical", "high", "normal", "low"]
+      persistence: true
+
+# 决策协调机制
+decision_coordination:
+  # 自动化决策
+  automated_decisions:
+    pricing_approval:
+      condition: "margin >= target_margin AND customer_tier != 'D'"
+      agent: "raw_materials_price_agent"
+      action: "auto_approve_quotation"
+
+    supplier_selection:
+      condition: "price_variance < 15% AND quality_score >= 90"
+      agent: "fastener_drawing_analysis_agent"
+      action: "auto_select_supplier"
+
+    response_priority:
+      condition: "customer_tier == 'A+' OR urgency_level == 'critical'"
+      agent: "customer_email_dfac_agent"
+      action: "immediate_response"
+
+  # 需要人工干预的决策
+  human_intervention_required:
+    exceptions:
+      - "margin_below_target"
+      - "quality_risk_detected"
+      - "customer_complaint"
+      - "delivery_delay_risk"
+
+    escalation_matrix:
+      level_1: "team_leader_notification"
+      level_2: "department_manager_approval"
+      level_3: "executive_intervention"
+
+# 性能监控和优化
+performance_monitoring:
+  # 系统级KPI
+  system_kpis:
+    end_to_end_cycle_time:
+      target: "from_inquiry_to_delivery < 30_days"
+      measurement: "real_time_tracking"
+
+    customer_satisfaction:
+      target: "95%+ satisfaction_score"
+      measurement: "post_delivery_surveys"
+
+    operational_efficiency:
+      target: "90%+ automation_rate"
+      measurement: "process_analytics"
+
+    profitability:
+      target: "average_margin >= 20%"
+      measurement: "financial_analytics"
+
+  # 智能体性能指标
+  agent_performance_metrics:
+    fastener_drawing_analysis_agent:
+      - "analysis_accuracy"
+      - "processing_time"
+      - "supplier_match_success_rate"
+
+    raw_materials_price_agent:
+      - "price_prediction_accuracy"
+      - "margin_protection_rate"
+      - "cost_savings_identified"
+
+    customer_email_dfac_agent:
+      - "response_time"
+      - "conversion_rate"
+      - "customer_satisfaction"
+
+    project_tracking_agent:
+      - "on_time_delivery_rate"
+      - "quality_pass_rate"
+      - "customer_communication_effectiveness"
+
+# 学习和适应机制
+adaptive_learning:
+  # 持续改进
+  continuous_improvement:
+    success_pattern_analysis:
+      data_source: "completed_projects"
+      analysis_focus: "成功交易模式识别"
+      improvement_target: "提高成功率"
+
+    failure_pattern_analysis:
+      data_source: "lost_opportunities"
+      analysis_focus: "失败原因分析"
+      improvement_target: "降低失败率"
+
+    market_trend_analysis:
+      data_source: "external_market_data"
+      analysis_focus: "市场趋势和竞争分析"
+      improvement_target: "保持竞争优势"
+
+  # 知识共享
+  knowledge_sharing:
+    best_practices_repository:
+      format: "structured_case_studies"
+      accessibility: "all_agents_read_only"
+      update_frequency: "weekly"
+
+    cross_agent_learning:
+      methodology: "federated_learning"
+      privacy_preservation: true
+      knowledge_transfer: "model_updates_sharing"
+
+# 部署和扩展性
+deployment_strategy:
+  # 初始部署
+  initial_deployment:
+    phase_1:
+      agents: ["customer_email_dfac_agent"]
+      focus: "客户沟通优化"
+      success_criteria: "response_time < 2 hours"
+
+    phase_2:
+      agents: ["fastener_drawing_analysis_agent"]
+      focus: "技术分析自动化"
+      success_criteria: "analysis_accuracy > 90%"
+
+    phase_3:
+      agents: ["raw_materials_price_agent"]
+      focus: "成本控制优化"
+      success_criteria: "margin_protection > 95%"
+
+    phase_4:
+      agents: ["project_tracking_agent"]
+      focus: "项目管理数字化"
+      success_criteria: "on_time_delivery > 95%"
+
+  # 扩展性设计
+  scalability_design:
+    horizontal_scaling: "agent_instances"
+    vertical_scaling: "resource_allocation"
+    geographic_expansion: "multi_region_support"
+
+# 风险管理和业务连续性
+risk_management:
+  # 业务风险
+  business_risks:
+    market_volatility:
+      mitigation: "dynamic_pricing_models"
+      monitoring: "raw_materials_price_agent"
+
+    supply_chain_disruption:
+      mitigation: "multi_supplier_strategy"
+      monitoring: "project_tracking_agent"
+
+    quality_issues:
+      mitigation: "enhanced_quality_control"
+      monitoring: "fastener_drawing_analysis_agent"
+
+    customer_relationship:
+      mitigation: "proactive_communication"
+      monitoring: "customer_email_dfac_agent"
+
+  # 系统风险
+  system_risks:
+    agent_failure:
+      mitigation: "redundancy_and_fallback"
+      recovery: "graceful_degradation"
+
+    data_corruption:
+      mitigation: "regular_backups"
+      recovery: "point_in_time_restore"
+
+    security_breach:
+      mitigation: "multi_layer_security"
+      response: "incident_management_plan"
+
+# 成本效益分析
+cost_benefit_analysis:
+  # 实施成本
+  implementation_costs:
+    development: "$500,000"
+    infrastructure: "$200,000/year"
+    training: "$50,000"
+    maintenance: "$100,000/year"
+
+  # 预期收益
+  expected_benefits:
+    operational_efficiency:
+      labor_cost_reduction: "30%"
+      processing_time_reduction: "50%"
+      error_rate_reduction: "80%"
+
+    business_growth:
+      revenue_increase: "25%"
+      customer_satisfaction_improvement: "20%"
+      market_share_growth: "15%"
+
+    financial_impact:
+      margin_improvement: "5 percentage_points"
+      roi_timeline: "18 months"
+      net_present_value: "$2,000,000 (3 years)"
