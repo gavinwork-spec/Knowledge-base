@@ -17,14 +17,13 @@ import {
 import {
   DashboardOutlined,
   DollarOutlined,
-  MailOutlined,
   ProjectOutlined,
   BarChartOutlined,
   UserOutlined,
   BellOutlined,
   SettingOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  RiseOutlined,
+  FallOutlined,
   TeamOutlined,
   FileTextOutlined
 } from '@ant-design/icons';
@@ -96,7 +95,7 @@ const TradingDashboard: React.FC<TradingDashboardProps> = () => {
     },
     {
       key: 'profitability',
-      icon: <TrendingUpOutlined />,
+      icon: <RiseOutlined />,
       label: '利润分析',
     },
   ];
@@ -254,7 +253,7 @@ const OverviewDashboard: React.FC = () => {
               value={28}
               precision={0}
               valueStyle={{ color: '#3f8600' }}
-              prefix={<TrendingUpOutlined />}
+              prefix={<RiseOutlined />}
               suffix="个"
             />
             <Progress percent={78} size="small" style={{ marginTop: 8 }} />

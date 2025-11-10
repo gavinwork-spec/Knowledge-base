@@ -1,0 +1,302 @@
+import React, { useState, useEffect } from 'react';
+import {
+  Layout,
+  Menu,
+  Avatar,
+  Dropdown,
+  Badge,
+  Button,
+  Space,
+  Typography,
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Progress
+} from 'antd';
+import {
+  DashboardOutlined,
+  DollarOutlined,
+  ProjectOutlined,
+  BarChartOutlined,
+  UserOutlined,
+  BellOutlined,
+  SettingOutlined,
+  RiseOutlined,
+  TeamOutlined,
+  FileTextOutlined
+} from '@ant-design/icons';
+import PriceMonitoringDashboard from './components/PriceMonitoringDashboard';
+import CustomerRelationshipManager from './components/CustomerRelationshipManager';
+import ProjectKanbanBoard from './components/ProjectKanbanBoard';
+import DrawingViewer from './components/DrawingViewer';
+import QuotationManager from './components/QuotationManager';
+import SupplierAnalytics from './components/SupplierAnalytics';
+import ProfitabilityReports from './components/ProfitabilityReports';
+
+const { Header, Sider, Content } = Layout;
+const { Title, Text } = Typography;
+
+const TradingDashboardSimple = () => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState("dashboard");
+  const [notifications, setNotifications] = useState(8);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNotifications((prev) => prev + Math.floor(Math.random() * 3));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const menuItems = [
+    {
+      key: "dashboard",
+      icon: <DashboardOutlined />,
+      label: "总览仪表板"
+    },
+    {
+      key: "price-monitoring",
+      icon: <DollarOutlined />,
+      label: "价格监控"
+    },
+    {
+      key: "customer-management",
+      icon: <UserOutlined />,
+      label: "客户管理"
+    },
+    {
+      key: "project-tracking",
+      icon: <ProjectOutlined />,
+      label: "项目跟踪"
+    },
+    {
+      key: "drawing-viewer",
+      icon: <FileTextOutlined />,
+      label: "图纸查看器"
+    },
+    {
+      key: "quotation",
+      icon: <BarChartOutlined />,
+      label: "报价管理"
+    },
+    {
+      key: "supplier-analytics",
+      icon: <TeamOutlined />,
+      label: "供应商分析"
+    },
+    {
+      key: "profitability",
+      icon: <RiseOutlined />,
+      label: "利润分析"
+    }
+  ];
+
+  const userMenuItems = [
+    {
+      key: "profile",
+      label: "个人资料",
+      icon: <UserOutlined />
+    },
+    {
+      key: "settings",
+      label: "系统设置",
+      icon: <SettingOutlined />
+    },
+    {
+      type: "divider"
+    },
+    {
+      key: "logout",
+      label: "退出登录",
+      danger: true
+    }
+  ];
+
+  const OverviewDashboard = () => {
+    return (
+      <div style={{ padding: "24px" }}>
+        <Title level={2}>🏭 贸易公司智能仪表板</Title>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="今日询价"
+                value={28}
+                precision={0}
+                valueStyle={{ color: "#3f8600" }}
+                prefix={<RiseOutlined />}
+                suffix="个"
+              />
+              <Progress percent={78} size="small" style={{ marginTop: 8 }} />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="待处理报价"
+                value={15}
+                precision={0}
+                valueStyle={{ color: "#cf1322" }}
+                prefix={<FileTextOutlined />}
+                suffix="份"
+              />
+              <Text type="secondary">平均处理时间: 2.5小时</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="本月利润"
+                value={256000}
+                precision={0}
+                valueStyle={{ color: "#3f8600" }}
+                prefix={<DollarOutlined />}
+                suffix="元"
+              />
+              <Text type="success">+12.5% vs 上月</Text>
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Card>
+              <Statistic
+                title="准时交付率"
+                value={94.8}
+                precision={1}
+                valueStyle={{ color: "#3f8600" }}
+                suffix="%"
+              />
+              <Text type="secondary">目标: 95%</Text>
+            </Card>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <Card title="📈 原材料价格走势" extra={<Button type="link">查看详情</Button>}>
+              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Text type="secondary">价格监控图表组件将在此显示</Text>
+              </div>
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card title="💱 汇率变动" extra={<Button type="link">查看详情</Button>}>
+              <div style={{ height: 200, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Text type="secondary">汇率监控图表组件将在此显示</Text>
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      </div>
+    );
+  };
+
+  const renderContent = () => {
+    switch (selectedMenu) {
+      case "dashboard":
+        return <OverviewDashboard />;
+      case "price-monitoring":
+        return <PriceMonitoringDashboard />;
+      case "customer-management":
+        return <CustomerRelationshipManager />;
+      case "project-tracking":
+        return <ProjectKanbanBoard />;
+      case "drawing-viewer":
+        return <DrawingViewer />;
+      case "quotation":
+        return <QuotationManager />;
+      case "supplier-analytics":
+        return <SupplierAnalytics />;
+      case "profitability":
+        return <ProfitabilityReports />;
+      default:
+        return (
+          <div style={{ padding: "24px", textAlign: "center" }}>
+            <Title level={2}>功能模块：{menuItems.find(item => item.key === selectedMenu)?.label}</Title>
+            <Text type="secondary">该功能模块正在开发中，敬请期待！</Text>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        style={{
+          background: "#001529",
+          boxShadow: "2px 0 8px rgba(0,0,0,0.15)"
+        }}
+      >
+        <div style={{
+          height: 64,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(255,255,255,0.1)",
+          marginBottom: 16
+        }}>
+          {!collapsed ? (
+            <Title level={4} style={{ color: "white", margin: 0 }}>🏭 贸易公司</Title>
+          ) : (
+            <Title level={4} style={{ color: "white", margin: 0 }}>🏭</Title>
+          )}
+        </div>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedMenu]}
+          items={menuItems}
+          onClick={({ key }) => setSelectedMenu(key)}
+        />
+      </Sider>
+      <Layout>
+        <Header style={{
+          padding: "0 24px",
+          background: "#fff",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between"
+        }}>
+          <Button
+            type="text"
+            icon={collapsed ? <DashboardOutlined /> : <DashboardOutlined />}
+            onClick={() => setCollapsed(!collapsed)}
+            style={{ fontSize: "16px", width: 64, height: 64 }}
+          />
+          <Space size="large">
+            <Space>
+              <Badge status="processing" text="实时数据" />
+              <Badge count={notifications} size="small">
+                <Button
+                  type="text"
+                  icon={<BellOutlined />}
+                  style={{ fontSize: "16px" }}
+                />
+              </Badge>
+            </Space>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight">
+              <Space style={{ cursor: "pointer" }}>
+                <Avatar size="small" icon={<UserOutlined />} />
+                <span>销售经理</span>
+              </Space>
+            </Dropdown>
+          </Space>
+        </Header>
+        <Content style={{
+          margin: "16px",
+          padding: 0,
+          minHeight: 280,
+          background: "#f0f2f5"
+        }}>
+          {renderContent()}
+        </Content>
+      </Layout>
+    </Layout>
+  );
+};
+
+export default TradingDashboardSimple;

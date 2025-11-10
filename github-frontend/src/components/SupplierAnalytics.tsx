@@ -23,6 +23,7 @@ import {
   message,
   Typography
 } from 'antd';
+// Timeline is now included in the main antd import
 import {
   TeamOutlined,
   StarOutlined,
@@ -34,11 +35,13 @@ import {
   DollarOutlined,
   TruckOutlined,
   FileTextOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
+  RiseOutlined,
+  FallOutlined,
   BarChartOutlined,
   SettingOutlined,
-  EyeOutlined
+  EyeOutlined,
+  MessageOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';

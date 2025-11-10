@@ -41,6 +41,7 @@ export default defineConfig({
           router: ['react-router-dom'],
           ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
           charts: ['recharts'],
+          antd: ['antd', '@ant-design/icons'],
         },
       },
     },

@@ -22,9 +22,8 @@ import {
 } from 'antd';
 import {
   DollarOutlined,
-  TrendingUpOutlined,
-  TrendingDownOutlined,
-  ProfitOutlined,
+  RiseOutlined,
+  FallOutlined,
   BarChartOutlined,
   PieChartOutlined,
   LineChartOutlined,
@@ -363,8 +362,8 @@ const ProfitabilityReports: React.FC = () => {
       key: 'trend',
       render: (trend) => (
         <span>
-          {trend === 'up' && <TrendingUpOutlined style={{ color: '#52c41a' }} />}
-          {trend === 'down' && <TrendingDownOutlined style={{ color: '#ff4d4f' }} />}
+          {trend === 'up' && <RiseOutlined style={{ color: '#52c41a' }} />}
+          {trend === 'down' && <FallOutlined style={{ color: '#ff4d4f' }} />}
           {trend === 'stable' && <span style={{ color: '#8c8c8c' }}>—</span>}
         </span>
       ),
@@ -452,7 +451,7 @@ const ProfitabilityReports: React.FC = () => {
             />
             <div style={{ marginTop: 8 }}>
               <span style={{ color: revenueGrowth > 0 ? '#52c41a' : '#ff4d4f' }}>
-                {revenueGrowth > 0 ? <TrendingUpOutlined /> : <TrendingDownOutlined />}
+                {revenueGrowth > 0 ? <RiseOutlined /> : <FallOutlined />}
                 {' '}
                 {revenueGrowth > 0 ? '+' : ''}{revenueGrowth.toFixed(1)}% 同比
               </span>
@@ -466,7 +465,7 @@ const ProfitabilityReports: React.FC = () => {
               value={currentMonthData.grossProfit / 10000}
               precision={1}
               suffix="万"
-              prefix={<ProfitOutlined />}
+              prefix={<DollarOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
             <div style={{ marginTop: 8 }}>
@@ -489,7 +488,7 @@ const ProfitabilityReports: React.FC = () => {
             />
             <div style={{ marginTop: 8 }}>
               <span style={{ color: profitGrowth > 0 ? '#52c41a' : '#ff4d4f' }}>
-                {profitGrowth > 0 ? <TrendingUpOutlined /> : <TrendingDownOutlined />}
+                {profitGrowth > 0 ? <RiseOutlined /> : <FallOutlined />}
                 {' '}
                 {profitGrowth > 0 ? '+' : ''}{profitGrowth.toFixed(1)}% 同比
               </span>
