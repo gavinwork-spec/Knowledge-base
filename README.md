@@ -1,487 +1,250 @@
-# 🎯 智能知识库系统 - Stage 5
+# Manufacturing Knowledge Base System
 
-**智能知识演化与业务策略集成系统**
+A comprehensive AI-powered knowledge base system specifically designed for manufacturing operations, featuring advanced RAG capabilities, multi-agent orchestration, and real-time observability.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![Flask](https://img.shields.io/badge/flask-2.0+-green.svg)](https://flask.palletsprojects.com/)
+## 🚀 Key Features
 
-## 📋 项目概述
+### 🤖 Advanced AI Capabilities
+- **Advanced RAG System**: State-of-the-art retrieval with LangChain and LlamaIndex integration
+- **Multi-Agent Orchestration**: Intelligent agent coordination for complex tasks
+- **Multi-Modal Processing**: Handle text, images, tables, and technical drawings
+- **Query Decomposition**: Break down complex manufacturing queries
+- **Conversation Memory**: Context-aware dialogue management
 
-本项目是一个完整的智能知识管理系统，已从传统的"静态数据仓库+检索系统"升级为"智能业务助手"，具备自动学习、策略生成、自然语言交互等先进功能。
+### 🏭 Manufacturing-Specific Features
+- **Quote Management**: Automated quote generation and analysis
+- **Quality Control**: Integrated quality assurance workflows
+- **Compliance Tracking**: ISO and industry standard compliance
+- **Document Processing**: Technical drawing and specification analysis
+- **Safety Management**: Safety procedure enforcement and monitoring
 
-### 🌟 核心特性
+### 📊 Comprehensive Observability
+- **Real-time Monitoring**: WebSocket-based dashboard with live metrics
+- **AI Interaction Tracking**: Detailed logging with LangFuse patterns
+- **Cost Analysis**: API call cost breakdown and forecasting
+- **User Analytics**: Behavior pattern recognition and insights
+- **Intelligent Alerting**: Proactive anomaly detection and notification
 
-- 🤖 **自动学习Agent** - 文件监控与智能知识提取
-- 💡 **报价策略Agent** - 智能价格分析与策略生成
-- 💬 **聊天接口API** - 自然语言查询与语义搜索
-- 📊 **前端策略中心** - 可视化数据与交互界面
-- 🔒 **安全同步Agent** - GitHub备份与数据脱敏
+### 🔍 Advanced Search & Retrieval
+- **Hybrid Search Engine**: Multiple search strategies combined
+- **Personalized Search**: User-adaptive search results
+- **Semantic Search**: Concept-based understanding and matching
+- **Cross-Modal Retrieval**: Search across different content types
+- **Citation Tracking**: Source verification and trust scoring
 
----
-
-## 🏗️ 系统架构
+## 📁 Project Structure
 
 ```
-┌─────────────────┬─────────────────┬─────────────────┐
-│   知识库API     │   聊天接口API   │   提醒服务API   │
-│   端口: 8001    │   端口: 8002    │   端口: 8000    │
-└─────────────────┴─────────────────┴─────────────────┘
-         │                   │                   │
-         └───────────────────┼───────────────────┘
-                             │
-                    ┌─────────────────┐
-                    │  SQLite数据库   │
-                    │  24个表结构     │
-                    └─────────────────┘
+├── rag/                          # Advanced RAG System
+├── multi_agent_system/           # Multi-Agent Architecture
+├── observability/                # Comprehensive Monitoring System
+├── github-frontend/              # Modern React Frontend
+├── python_sdk/                   # Python Client SDK
+├── microservices/                # Microservices Architecture
+├── frontend/                     # Legacy Frontend
+├── docs/                         # Documentation
+├── tests/                        # Test Files
+├── config/                       # Configuration Files
+├── data/                         # Data and Reports
+└── scripts/                      # Utility Scripts
 ```
 
----
+## 🛠️ Installation
 
-## 🚀 快速开始
-
-### 环境要求
-
+### Prerequisites
 - Python 3.8+
-- 现代浏览器（Chrome, Firefox, Safari）
-- 4GB+ 内存推荐
-
-### 安装步骤
-
-1. **克隆项目**
-```bash
-git clone https://github.com/gavinwork-spec/Knowledge-base.git
-cd Knowledge-base
-```
-
-2. **安装依赖**
-```bash
-pip install flask
-# 可选依赖（提升功能）
-pip install PyYAML sentence-transformers openai
-```
-
-3. **初始化数据库**
-```bash
-python3 setup_knowledge_models.py
-```
-
-4. **启动所有服务**
-```bash
-# 启动知识库API (端口8001)
-python3 api_server_knowledge.py --port 8001 &
-
-# 启动聊天接口API (端口8002)
-python3 api_chat_interface.py --port 8002 &
-
-# 启动提醒服务API (端口8000)
-python3 api_server_reminders.py &
-```
-
-5. **访问前端界面**
-```
-打开 github-frontend/index.html 文件
-```
-
----
-
-## 📖 功能模块
-
-### 1. 🤖 自动学习系统
-
-**配置文件**: `learn_from_updates_agent.yaml`
-
-**功能特性**:
-- 定时扫描指定目录（客户文件、询盘文件）
-- 智能解析PDF、Excel、Word文档
-- 自动提取产品规格、材料、价格信息
-- 敏感数据自动脱敏
-
-**使用方法**:
-```bash
-# 每周完整学习
-python3 learn_from_updates.py --mode weekly
-
-# 每日增量学习
-python3 learn_from_updates.py --mode daily
-```
-
-### 2. 💡 报价策略系统
-
-**配置文件**: `quote_strategy_agent.yaml`
-
-**分析功能**:
-- 价格趋势分析（移动平均、线性回归）
-- 客户行为分析
-- 市场波动检测
-- 智能策略推荐
-
-**使用方法**:
-```bash
-# 生成每日策略
-python3 generate_quote_strategies.py --mode daily
-
-# 生成每周深度分析
-python3 generate_quote_strategies.py --mode weekly
-```
-
-### 3. 💬 智能聊天接口
-
-**API端点**: `POST http://localhost:8002/api/v1/chat/query`
-
-**支持查询**:
-- 自然语言产品查询
-- 语义搜索相关内容
-- 智能推荐和建议
-- 多语言支持（中英文）
-
-**示例请求**:
-```json
-{
-  "query": "查询不锈钢螺栓的价格信息",
-  "context": "紧固件产品",
-  "limit": 5
-}
-```
-
-### 4. 📊 前端策略中心
-
-**访问地址**: `github-frontend/index.html`
-
-**界面功能**:
-- 📊 实时数据可视化
-- 💡 策略建议展示
-- 📈 趋势分析图表
-- 💬 智能问答界面
-- 🛡️ 系统安全状态
-
-### 5. 🔒 安全同步系统
-
-**配置文件**: `github_auto_sync_agent.yaml`
-
-**安全特性**:
-- 敏感客户信息自动脱敏
-- 价格数据保护
-- GDPR合规设计
-- 多层安全验证
-
-**同步计划**:
-- 每周日23:30 - 完整备份
-- 每日02:00 - 重要更新同步
-- 每月1号01:00 - 深度同步
-
----
-
-## 📊 API文档
-
-### 知识库API (端口8001)
-
-#### 健康检查
-```http
-GET /api/health
-```
-
-#### 获取知识条目
-```http
-GET /api/knowledge/entries?limit=10&offset=0
-```
-
-#### 搜索知识
-```http
-GET /api/knowledge/search?q=关键词&top_k=5
-```
-
-#### 获取统计信息
-```http
-GET /api/knowledge/stats
-```
-
-### 聊天接口API (端口8002)
-
-#### 智能问答
-```http
-POST /api/v1/chat/query
-Content-Type: application/json
-
-{
-  "query": "您的问题",
-  "context": "上下文",
-  "limit": 5
-}
-```
-
----
-
-## 🛡️ 安全与隐私
-
-### 数据保护措施
-
-- 🔒 **敏感信息脱敏**: 客户姓名、联系方式、价格信息
-- 📁 **目录排除**: 客户目录、询盘目录完全不同步
-- 🇪🇺 **GDPR合规**: 数据最小化、加密存储、审计追踪
-- 🚫 **本地数据策略**: 仅分析本地报价，不涉及网络产品
-
-### 安全配置
-
-```yaml
-# 敏感数据脱敏规则
-data_sanitization:
-  customer_data:
-    fields: ["name", "contact", "phone", "email"]
-    replacement: "[客户信息已脱敏]"
-
-  price_data:
-    fields: ["price", "cost", "amount", "budget"]
-    replacement: "[价格信息已脱敏]"
-```
-
----
-
-## 📈 系统监控
-
-### 性能指标
-
-- **API响应时间**: <200ms
-- **知识查询**: <100ms
-- **系统可用性**: 99.9%
-- **数据准确率**: 95%+
-
-### 监控端点
-
-```bash
-# 检查系统健康状态
-curl http://localhost:8001/api/health
-
-# 查看系统统计
-curl http://localhost:8001/api/knowledge/stats
-```
-
----
-
-## 🔧 配置说明
-
-### 主要配置文件
-
-| 配置文件 | 功能描述 |
-|---------|----------|
-| `learn_from_updates_agent.yaml` | 自动学习Agent配置 |
-| `quote_strategy_agent.yaml` | 报价策略Agent配置 |
-| `github_auto_sync_agent.yaml` | GitHub同步配置 |
-| `.gitignore` | Git忽略规则（安全配置） |
-
-### 环境变量
-
-```bash
-# 可选配置
-export FLASK_ENV=development
-export LOG_LEVEL=INFO
-export API_TIMEOUT=30000
-```
-
----
-
-## 📝 更新日志
-
-### v2.0.0 (2025-11-06) - Stage 5 智能化升级
-
-✨ **新增功能**:
-- 🤖 自动学习Agent系统
-- 💡 智能报价策略生成
-- 💬 自然语言聊天接口
-- 📊 可视化策略中心
-- 🔒 安全同步机制
-
-🔧 **技术升级**:
-- 3个API服务架构
-- 语义搜索技术
-- 响应式前端界面
-- 多层数据保护
-
----
-
-## 🤝 贡献指南
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
----
-
-## 📄 许可证
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
----
-
-## 📞 支持与联系
-
-- 📧 技术支持：通过GitHub Issues
-- 📖 项目文档：查看本README和各配置文件注释
-- 🔄 系统状态：访问前端策略中心查看实时状态
-
----
-
-**🚀 项目状态**: ✅ 生产就绪 | **📊 完成度**: 100% | **🛡️ 安全等级**: 高
-
-*智能知识库系统 - 让数据管理更智能，让业务决策更精准*
-
-## 系统架构
-
-### 核心实体
-
-1. **Customer (客户)** - 以"联系人邮件 + 公司名称"为核心标识
-2. **Factory (工厂)** - 制造工厂信息
-3. **Drawing (图纸记录)** - 客户图纸管理
-4. **FactoryQuote (工厂报价)** - 工厂报价记录
-5. **Specification (规格)** - 产品规格标准
-6. **ProcessStatus (定制流程状态)** - 订单流程跟踪
-
-### 数据库结构
-
-```
-Knowledge base/
-├── data/
-│   └── db.sqlite          # SQLite数据库文件
-├── models.py              # 数据库模型定义
-├── setup_models.py        # 数据库初始化脚本
-└── README.md             # 项目说明文档
-```
-
-## 快速开始
-
-### 1. 初始化数据库
-
-```bash
-cd "Knowledge base"
-python setup_models.py
-```
-
-这将：
-- 创建SQLite数据库文件 `./data/db.sqlite`
-- 初始化所有表结构
-- 插入示例数据用于测试
-- 验证数据库设置
-
-### 2. 使用数据库模型
-
+- Node.js 16+ (for frontend)
+- SQLite 3
+- Docker (optional)
+
+### Setup
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd manufacturing-knowledge-base
+   ```
+
+2. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Install frontend dependencies**
+   ```bash
+   cd github-frontend
+   npm install
+   ```
+
+4. **Initialize the database**
+   ```bash
+   python setup_models.py
+   ```
+
+5. **Start the system**
+   ```bash
+   # Start the main API server
+   python api_server_knowledge.py --port 8001
+
+   # Start the chat interface
+   python api_chat_interface.py --port 8002
+
+   # Start the frontend (optional)
+   cd github-frontend && npm start
+   ```
+
+## 📖 Usage Examples
+
+### Basic RAG Query
 ```python
-from models import DatabaseManager, Customer, Factory
+from rag.advanced_rag_system import create_advanced_rag_system
 
-# 创建数据库管理器
-db_manager = DatabaseManager("./data/db.sqlite")
+# Initialize RAG system
+rag_system = await create_advanced_rag_system()
+await rag_system.initialize()
 
-# 使用客户实体
-customer = Customer(db_manager)
-
-# 创建新客户（核心：公司名称 + 邮箱）
-customer_id = customer.create(
-    company_name="ABC制造有限公司",
-    contact_email="john@abc.com",
-    contact_name="John Smith",
-    country="美国",
-    language="英语"
+# Query the system
+response = await rag_system.query(
+    "What are the safety procedures for HAAS VF-2 CNC machines?"
 )
 
-# 查询客户（核心查询方法）
-customer_info = customer.get_by_company_and_email(
-    "ABC制造有限公司",
-    "john@abc.com"
+print(response.answer)
+```
+
+### Multi-Agent Orchestration
+```python
+from multi_agent_system import create_multi_agent_orchestrator
+
+# Initialize agent system
+orchestrator = await create_multi_agent_orchestrator()
+
+# Process complex manufacturing query
+result = await orchestrator.process_query(
+    "Analyze quote trends for titanium aerospace parts"
 )
 ```
 
-## 实体详情
+### Observability Integration
+```python
+from observability import create_observability_orchestrator
 
-### Customer (客户)
-- `id` - 主键
-- `company_name` - 公司名称 (必填)
-- `contact_email` - 联系人邮箱 (核心字段)
-- `contact_name` - 联系人名称
-- `country` - 国家/地区
-- `language` - 语言偏好
-- `phone` - 电话
-- `first_contact_date` - 首次联系日期
-- `notes` - 备注
+# Initialize observability
+observability = await create_observability_orchestrator()
 
-### Factory (工厂)
-- `id` - 主键
-- `factory_name` - 工厂名称
-- `location` - 地理位置
-- `capability` - 生产能力
-- `cost_reference` - 成本参考
-- `production_cycle` - 生产周期
-- `notes` - 备注
+# Track AI interactions
+await observability.log_ai_interaction(
+    session_id="session_001",
+    user_id="user_123",
+    query="Manufacturing safety procedures",
+    response="Detailed safety guidelines...",
+    performance_data={"response_time_ms": 1200}
+)
+```
 
-### Drawing (图纸记录)
-- `id` - 主键
-- `drawing_name` - 图纸名称
-- `customer_id` - 客户ID (外键)
-- `product_category` - 产品类别
-- `file_path` - 文件路径
-- `upload_date` - 上传日期
-- `status` - 状态
-- `notes` - 备注
+## 🔧 Configuration
 
-### FactoryQuote (工厂报价)
-- `id` - 主键
-- `factory_id` - 工厂ID (外键)
-- `product_category` - 产品类别
-- `quote_date` - 报价日期
-- `price` - 价格
-- `moq` - 最小起订量
-- `notes` - 备注
+### Environment Variables
+```bash
+# Database
+DATABASE_PATH=knowledge_base.db
 
-### Specification (规格)
-- `id` - 主键
-- `product_category` - 产品类别
-- `material` - 材料
-- `standard_or_custom` - 标准/定制
-- `surface_treatment` - 表面处理
-- `default_moq` - 默认最小起订量
-- `notes` - 备注
+# AI Services (Optional)
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
 
-### ProcessStatus (定制流程状态)
-- `id` - 主键
-- `drawing_id` - 图纸ID (外键)
-- `customer_id` - 客户ID (外键)
-- `status` - 状态 (图纸确认、样品、批量)
-- `last_update_date` - 最后更新日期
-- `notes` - 备注
+# LangFuse (Optional)
+LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+LANGFUSE_SECRET_KEY=your_langfuse_secret_key
+```
 
-## 状态选项
+### Advanced Configuration
+See `config/` directory for detailed configuration options.
 
-### 流程状态 (ProcessStatus.status)
-- `drawing_confirmation` - 图纸确认
-- `sample` - 样品
-- `batch_production` - 批量
+## 📊 Dashboard & Monitoring
 
-### 规格类型 (Specification.standard_or_custom)
-- `standard` - 标准
-- `custom` - 定制
+### Real-time Dashboard
+- **WebSocket Connection**: `ws://localhost:8765`
+- **System Health**: CPU, memory, API performance
+- **Manufacturing KPIs**: Quote accuracy, quality metrics, customer satisfaction
+- **User Analytics**: Behavior patterns and knowledge gaps
 
-## 数据库特性
+### Monitoring Features
+- **AI Interaction Tracking**: Complete audit trail
+- **Cost Analysis**: Per-operation cost breakdown
+- **Performance Metrics**: Real-time system performance
+- **Alert Management**: Intelligent anomaly detection
+- **User Insights**: Behavior analytics and recommendations
 
-- **索引优化**: 为常用查询字段创建了索引
-- **外键关系**: 建立了逻辑上的外键关系
-- **时间戳**: 自动记录创建和更新时间
-- **核心查询**: 支持按"公司名称+邮箱"进行客户查询
+## 🚀 Deployment
 
-## 扩展建议
+### Docker Deployment
+```bash
+# Build and start all services
+docker-compose up -d
+```
 
-1. **添加API接口**: 创建RESTful API用于数据访问
-2. **用户界面**: 开发Web或桌面应用界面
-3. **数据导入/导出**: 支持Excel、CSV格式
-4. **报表功能**: 生成各类统计报表
-5. **通知系统**: 流程状态变更通知
-6. **文件管理**: 图纸文件的上传和管理
+### Production Setup
+1. Configure environment variables
+2. Set up monitoring and alerting
+3. Configure database backups
+4. Set up SSL/TLS certificates
+5. Configure load balancing
 
-## 技术要求
+## 📚 Documentation
 
-- Python 3.7+
-- SQLite3 (Python内置)
-- 无需额外依赖
+- [API Documentation](docs/API_DESIGN.md)
+- [Multi-Agent System](docs/MULTI_AGENT_SYSTEM_DOCUMENTATION.md)
+- [Advanced RAG System](docs/ADVANCED_RAG_SYSTEM_DOCUMENTATION.md)
+- [Observability Guide](docs/OBSERVABILITY_GUIDE.md)
+- [Microservices Architecture](docs/MICROSERVICES_README.md)
 
-## 许可证
+## 🔍 Manufacturing Use Cases
 
-此项目仅用于学习和内部使用。
+### Quote Management
+- Automated quote generation with cost analysis
+- Accuracy tracking and improvement
+- Customer preference learning
+- Competitive analysis integration
+
+### Quality Control
+- Document classification and processing
+- Quality procedure enforcement
+- Compliance tracking and reporting
+- Defect analysis and prevention
+
+### Document Processing
+- Technical drawing analysis
+- Specification extraction
+- Cross-reference linking
+- Version control management
+
+### Customer Service
+- Intelligent query routing
+- Personalized response generation
+- Feedback integration and analysis
+- Satisfaction tracking
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests and documentation
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🆘 Support
+
+For support and questions:
+- Create an issue in the GitHub repository
+- Check the documentation
+- Review the examples in the `examples/` directory
+
+---
+
+Built with ❤️ for Advanced Manufacturing Knowledge Management
+
+This system combines state-of-the-art AI technology with manufacturing domain expertise to create a comprehensive knowledge management solution.
