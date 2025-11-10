@@ -1,0 +1,317 @@
+# Manufacturing Knowledge Base - Docker Compose Configuration
+# Complete development and testing environment
+
+version: '3.8'
+
+services:
+  # Frontend service
+  frontend:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.frontend
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF:-local}
+    ports:
+      - "3000:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - knowledge-api
+      - chat-api
+      - reminders-api
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Knowledge Base API service
+  knowledge-api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.api
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF:-local}
+    command: ["python", "api_server_knowledge.py", "--port", "8001", "--host", "0.0.0.0"]
+    ports:
+      - "8001:8001"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///data/knowledge_base.db
+      - LOG_LEVEL=INFO
+      - API_RATE_LIMIT=1000
+      - CORS_ORIGINS=http://localhost:3000,http://frontend
+      - REDIS_URL=redis://redis:6379/0
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_PORT=9001
+    volumes:
+      - knowledge-data:/app/data
+      - knowledge-logs:/app/logs
+      - ./../knowledge_base.db:/app/knowledge_base.db:ro
+    depends_on:
+      - redis
+      - postgres
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2Gi
+        reservations:
+          cpus: '0.5'
+          memory: 1Gi
+
+  # Chat Interface API service
+  chat-api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.api
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF:-local}
+    command: ["python", "api_chat_interface.py", "--port", "8002", "--host", "0.0.0.0"]
+    ports:
+      - "8002:8002"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///data/knowledge_base.db
+      - LOG_LEVEL=INFO
+      - API_RATE_LIMIT=500
+      - CORS_ORIGINS=http://localhost:3000,http://frontend
+      - REDIS_URL=redis://redis:6379/1
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CHAT_MODEL=gpt-4
+      - MAX_TOKENS=2000
+      - TEMPERATURE=0.7
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_PORT=9002
+    volumes:
+      - chat-data:/app/data
+      - chat-logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1Gi
+        reservations:
+          cpus: '0.25'
+          memory: 512Mi
+
+  # Reminders API service
+  reminders-api:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.api
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VERSION: ${VERSION:-latest}
+        VCS_REF: ${VCS_REF:-local}
+    command: ["python", "api_server_reminders.py", "--port", "8000", "--host", "0.0.0.0"]
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+      - DATABASE_URL=sqlite:///data/reminders.db
+      - LOG_LEVEL=INFO
+      - API_RATE_LIMIT=100
+      - CORS_ORIGINS=http://localhost:3000,http://frontend
+      - REDIS_URL=redis://redis:6379/2
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - PROMETHEUS_ENABLED=true
+      - PROMETHEUS_PORT=9000
+    volumes:
+      - reminders-data:/app/data
+      - reminders-logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 512Mi
+        reservations:
+          cpus: '0.125'
+          memory: 256Mi
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # PostgreSQL for production-ready database (optional)
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=knowledge_base
+      - POSTGRES_USER=kb_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-secure_password_change_me}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kb_user -d knowledge_base"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2Gi
+        reservations:
+          cpus: '0.5'
+          memory: 1Gi
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Jaeger for distributed tracing
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # HTTP collector
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    networks:
+      - knowledge-base-network
+    restart: unless-stopped
+
+# Network configuration
+networks:
+  knowledge-base-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Named volumes for data persistence
+volumes:
+  knowledge-data:
+    driver: local
+  knowledge-logs:
+    driver: local
+  chat-data:
+    driver: local
+  chat-logs:
+    driver: local
+  reminders-data:
+    driver: local
+  reminders-logs:
+    driver: local
+  redis-data:
+    driver: local
+  postgres-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local

@@ -1,0 +1,85 @@
+# Manufacturing Knowledge Base Frontend Dockerfile
+# Multi-stage build for React + TypeScript + Vite application
+
+# Build stage
+FROM node:18-alpine as builder
+
+# Set build arguments
+ARG BUILD_DATE
+ARG VERSION
+ARG VCS_REF
+ARG NODE_ENV=production
+
+# Labels
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="Knowledge Base Frontend" \
+      org.label-schema.description="Manufacturing Knowledge Base React Frontend" \
+      org.label-schema.url="https://github.com/gavinwork-spec/Knowledge-base" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/gavinwork-spec/Knowledge-base.git" \
+      org.label-schema.vendor="Knowledge Base Team" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
+
+# Set environment variables
+ENV NODE_ENV=$NODE_ENV \
+    NPM_CONFIG_LOGLEVEL=warn \
+    NPM_CONFIG_PROGRESS=false
+
+# Install build dependencies
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY github-frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code
+COPY github-frontend/ ./
+
+# Build the application
+RUN npm run build
+
+# Production stage with Nginx
+FROM nginx:alpine as production
+
+# Install additional utilities
+RUN apk add --no-cache \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy custom nginx configuration
+COPY deployment/docker/nginx.conf /etc/nginx/nginx.conf
+COPY deployment/docker/default.conf /etc/nginx/conf.d/default.conf
+
+# Copy built application from builder stage
+COPY --from=builder --chown=nodejs:nodejs /app/dist /usr/share/nginx/html
+
+# Create necessary directories
+RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run \
+    && chown -R nodejs:nodejs /var/cache/nginx /var/log/nginx /var/run
+
+# Switch to non-root user
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80/ || exit 1
+
+# Expose port
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

@@ -1,0 +1,610 @@
+# Security and GDPR Compliance Configuration
+# Comprehensive security controls and GDPR compliance for Manufacturing Knowledge Base
+
+---
+# Network Policies for Enhanced Security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: knowledge-base-security-netpol
+  namespace: knowledge-base
+  labels:
+    component: security
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  # Allow traffic from ingress controller
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 8001
+    - protocol: TCP
+      port: 8002
+  # Allow traffic from monitoring
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: monitoring
+    ports:
+    - protocol: TCP
+      port: 9000
+    - protocol: TCP
+      port: 9001
+    - protocol: TCP
+      port: 9002
+  # Internal service communication
+  - from:
+    - podSelector: {}
+    ports:
+    - protocol: TCP
+      port: 6379  # Redis
+    - protocol: TCP
+      port: 5432  # PostgreSQL
+  egress:
+  # Allow DNS resolution
+  - to: []
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  # Allow HTTPS to external services
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+  # Allow HTTP to external services (restricted)
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 80
+    metadata:
+      annotations:
+        description: "Only for essential external API calls"
+
+---
+# Pod Security Policies
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: knowledge-base-psp
+  labels:
+    component: security
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - 'configMap'
+    - 'emptyDir'
+    - 'projected'
+    - 'secret'
+    - 'downwardAPI'
+    - 'persistentVolumeClaim'
+  runAsUser:
+    rule: 'MustRunAsNonRoot'
+  seLinux:
+    rule: 'RunAsAny'
+  fsGroup:
+    rule: 'RunAsAny'
+
+---
+# Security Context Constraints (OpenShift)
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: knowledge-base-scc
+  labels:
+    component: security
+allowPrivilegedContainer: false
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: false
+readOnlyRootFilesystem: false
+runAsUser:
+  type: MustRunAsRange
+  uidRange: "1000-9999"
+seLinuxContext:
+  type: MustRunAs
+fsGroup:
+  type: MustRunAs
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret
+
+---
+# GDPR Compliance Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gdpr-compliance-config
+  namespace: knowledge-base
+  labels:
+    component: gdpr
+data:
+  gdpr-config.yaml: |
+    # GDPR Compliance Configuration
+    gdpr:
+      enabled: true
+      version: "GDPR-2016/679"
+
+      # Data Minimization
+      data_minimization:
+        enabled: true
+        retention_periods:
+          user_data: "365d"
+          search_logs: "90d"
+          session_data: "30d"
+          analytics_data: "180d"
+
+      # Right to Erasure
+      right_to_erasure:
+        enabled: true
+        automated: true
+        verification_required: true
+
+      # Data Portability
+      data_portability:
+        enabled: true
+        formats: ["json", "csv", "pdf"]
+        retention: "7d"
+
+      # Consent Management
+      consent_management:
+        enabled: true
+        granular_consent: true
+        consent_storage: "encrypted"
+        withdrawal_allowed: true
+
+      # Data Processing Records
+      processing_records:
+        enabled: true
+        automated_logging: true
+        retention_period: "6y"
+
+      # Data Breach Notification
+      breach_notification:
+        enabled: true
+        notification_period: "72h"
+        automated_detection: true
+
+      # Impact Assessment
+        enabled: true
+        automated_risk_scoring: true
+
+      # Privacy by Design
+      privacy_by_design:
+        enabled: true
+        encryption_at_rest: true
+        encryption_in_transit: true
+        anonymization: true
+
+      # Cookie Compliance
+      cookie_compliance:
+        enabled: true
+        consent_required: true
+        essential_cookies_only: false
+
+      # Audit Trail
+      audit_trail:
+        enabled: true
+        immutable: true
+        retention_period: "6y"
+
+---
+# GDPR Data Erasure Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gdpr-data-eraser
+  namespace: knowledge-base
+  labels:
+    app: gdpr-data-eraser
+    component: gdpr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gdpr-data-eraser
+  template:
+    metadata:
+      labels:
+        app: gdpr-data-eraser
+        component: gdpr
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: data-eraser
+        image: knowledge-base/gdpr-data-eraser:latest
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gdpr-secrets
+              key: data-encryption-key
+        - name: AUDIT_LOG_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gdpr-secrets
+              key: audit-log-key
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: database-data
+          mountPath: /data
+        - name: audit-logs
+          mountPath: /logs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: database-data
+        persistentVolumeClaim:
+          claimName: knowledge-api-data-pvc
+      - name: audit-logs
+        persistentVolumeClaim:
+          claimName: knowledge-api-logs-pvc
+
+---
+# GDPR Data Portability Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gdpr-data-portability
+  namespace: knowledge-base
+  labels:
+    app: gdpr-data-portability
+    component: gdpr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gdpr-data-portability
+  template:
+    metadata:
+      labels:
+        app: gdpr-data-portability
+        component: gdpr
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+      - name: data-portability
+        image: knowledge-base/gdpr-data-portability:latest
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: gdpr-secrets
+              key: data-encryption-key
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: database-data
+          mountPath: /data
+        - name: export-storage
+          mountPath: /exports
+      volumes:
+      - name: database-data
+        persistentVolumeClaim:
+          claimName: knowledge-api-data-pvc
+      - name: export-storage
+        persistentVolumeClaim:
+          claimName: backup-pvc
+
+---
+# API Gateway with Security Features
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: knowledge-base-gateway
+  namespace: knowledge-base
+  labels:
+    component: security
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: tls-certificate
+    hosts:
+    - knowledge-base.company.com
+    - api.knowledge-base.company.com
+    - chat-api.knowledge-base.company.com
+    - reminders-api.knowledge-base.company.com
+
+---
+# Security Headers and CORS Policy
+apiVersion: networking.istio.io/v1beta1
+kind: EnvoyFilter
+metadata:
+  name: security-headers-filter
+  namespace: knowledge-base
+  labels:
+    component: security
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: SIDECAR_INBOUND
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+            subFilter:
+              name: "envoy.filters.http.router"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.lua
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+          inline_code: |
+            function envoy_on_request(request_handle)
+              -- Add security headers
+              request_handle:headers():add("X-Frame-Options", "DENY")
+              request_handle:headers():add("X-Content-Type-Options", "nosniff")
+              request_handle:headers():add("X-XSS-Protection", "1; mode=block")
+              request_handle:headers():add("Referrer-Policy", "strict-origin-when-cross-origin")
+              request_handle:headers():add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'")
+              request_handle:headers():add("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+            end
+
+---
+# Rate Limiting Policy
+apiVersion: networking.istio.io/v1beta1
+kind: EnvoyFilter
+metadata:
+  name: rate-limit-filter
+  namespace: knowledge-base
+  labels:
+    component: security
+spec:
+  configPatches:
+  - applyTo: HTTP_FILTER
+    match:
+      context: GATEWAY
+      listener:
+        filterChain:
+          filter:
+            name: "envoy.filters.network.http_connection_manager"
+    patch:
+      operation: INSERT_BEFORE
+      value:
+        name: envoy.filters.http.local_ratelimit
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+          stat_prefix: http_local_rate_limiter
+          token_bucket:
+            max_tokens: 100
+            tokens_per_fill: 10
+            fill_interval: 1s
+          filter_enabled:
+            runtime_key: local_rate_limit_enabled
+          filter_enforced:
+            runtime_key: local_rate_limit_enforced
+
+---
+# Web Application Firewall (WAF) Policy
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: waf-policy
+  namespace: knowledge-base
+  labels:
+    component: security
+spec:
+  selector:
+    matchLabels:
+      app: knowledge-api
+  action: DENY
+  rules:
+  - to:
+    - operation:
+        methods: ["POST", "PUT", "DELETE"]
+        paths: ["/admin/*"]
+    when:
+    - key: request.auth.claims[role]
+      values: ["admin"]
+  - to:
+    - operation:
+        paths: ["/api/v1/users/*"]
+    when:
+    - key: request.headers[x-api-key]
+      not_values: ["*"]
+
+---
+# Certificate Rotation Policy
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  labels:
+    component: security
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: security@company.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+
+---
+# Security Monitoring and Alerting
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-monitoring-rules
+  namespace: knowledge-base
+  labels:
+    component: security
+data:
+  security-rules.yaml: |
+    groups:
+    - name: security.rules
+      rules:
+      # Suspicious login attempts
+      - alert: SuspiciousLoginActivity
+        expr: rate(login_attempts_total{status="failure"}[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate of failed login attempts"
+          description: "More than 10 failed login attempts per minute from {{ $labels.source_ip }}"
+
+      # Data access anomalies
+      - alert: DataAccessAnomaly
+        expr: rate(data_access_requests_total[5m]) > 1000
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "Unusual data access pattern detected"
+          description: "Data access rate is {{ $value }} requests per minute"
+
+      # Unauthorized API access
+      - alert: UnauthorizedAPIAccess
+        expr: rate(http_requests_total{status="401"}[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+          category: security
+        annotations:
+          summary: "High rate of unauthorized API access attempts"
+          description: "{{ $value }} unauthorized requests per minute"
+
+      # Potential data breach
+      - alert: PotentialDataBreach
+        expr: rate(data_export_requests_total[5m]) > 50
+        for: 30s
+        labels:
+          severity: critical
+          category: security
+        annotations:
+          summary: "Potential data breach detected"
+          description: "High rate of data export requests: {{ $value }} per minute"
+
+---
+# Compliance Audit Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: compliance-audit-config
+  namespace: knowledge-base
+  labels:
+    component: compliance
+data:
+  audit-config.yaml: |
+    compliance:
+      frameworks:
+        - name: "GDPR"
+          version: "2016/679"
+          enabled: true
+          requirements:
+            - "Article 25: Data protection by design and by default"
+            - "Article 32: Security of processing"
+            - "Article 33: Notification of a personal data breach"
+            - "Article 34: Communication of a personal data breach to the data subject"
+
+        - name: "SOC 2 Type II"
+          version: "2017"
+          enabled: true
+          trust_services_criteria:
+            - "Security"
+            - "Availability"
+            - "Processing Integrity"
+            - "Confidentiality"
+            - "Privacy"
+
+        - name: "ISO 27001"
+          version: "2013"
+          enabled: true
+          controls:
+            - "A.12.1.1: Documentation of operating procedures"
+            - "A.12.4.1: Event logging"
+            - "A.12.4.2: Protection of log information"
+            - "A.14.2.5: Secure system engineering"
+
+      audit_events:
+        - data_access
+        - data_modification
+        - authentication_events
+        - authorization_changes
+        - configuration_changes
+        - system_errors
+        - security_incidents
+
+      retention:
+        audit_logs: "6y"
+        access_logs: "2y"
+        security_logs: "6y"
+        system_logs: "1y"
+
+      monitoring:
+        real_time_alerts: true
+        compliance_reporting: true
+        automated_scans: true
+        vulnerability_assessments: true

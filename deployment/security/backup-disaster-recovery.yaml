@@ -1,0 +1,561 @@
+# Backup and Disaster Recovery Configuration
+# Automated backup, retention policies, and disaster recovery for Manufacturing Knowledge Base
+
+---
+# Backup CronJob for SQLite Databases
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: database-backup
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: database
+spec:
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: database-backup
+        spec:
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: postgres:15-alpine
+            command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_DIR="/backups/database"
+              BACKUP_FILE="knowledge_base_${TIMESTAMP}.db"
+
+              # Create backup directory
+              mkdir -p $BACKUP_DIR
+
+              # Backup SQLite databases
+              echo "Starting database backup..."
+              find /data -name "*.db" -type f -exec cp {} "${BACKUP_DIR}/${TIMESTAMP}_$(basename {})" \;
+
+              # Compress backups
+              find $BACKUP_DIR -name "*_${TIMESTAMP}_*" -type f -exec gzip {} \;
+
+              # Upload to S3 (if configured)
+              if [[ -n "${AWS_S3_BUCKET}" ]]; then
+                echo "Uploading to S3..."
+                aws s3 cp $BACKUP_DIR s3://${AWS_S3_BUCKET}/database/${TIMESTAMP}/ --recursive --storage-class STANDARD_IA
+              fi
+
+              # Cleanup old local backups (keep last 7 days)
+              find $BACKUP_DIR -name "*.gz" -type f -mtime +7 -delete
+
+              echo "Backup completed successfully"
+            env:
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-bucket-name
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-secret-key
+            volumeMounts:
+            - name: database-data
+              mountPath: /data
+              readOnly: true
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+          volumes:
+          - name: database-data
+            persistentVolumeClaim:
+              claimName: knowledge-api-data-pvc
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+
+---
+# File Storage Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: file-backup
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: files
+spec:
+  schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: file-backup
+        spec:
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: alpine:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_DIR="/backups/files"
+
+              # Install required tools
+              apk add --no-cache tar gzip aws-cli
+
+              # Create backup directory
+              mkdir -p $BACKUP_DIR
+
+              # Backup uploaded files and documents
+              echo "Starting file backup..."
+              find /data/uploads -type f -exec tar -czf "${BACKUP_DIR}/uploads_${TIMESTAMP}.tar.gz" {} +
+              find /data/documents -type f -exec tar -czf "${BACKUP_DIR}/documents_${TIMESTAMP}.tar.gz" {} +
+
+              # Upload to S3
+              if [[ -n "${AWS_S3_BUCKET}" ]]; then
+                echo "Uploading files to S3..."
+                aws s3 cp $BACKUP_DIR s3://${AWS_S3_BUCKET}/files/${TIMESTAMP}/ --recursive --storage-class GLACIER
+              fi
+
+              # Cleanup old local backups (keep last 4 weeks)
+              find $BACKUP_DIR -name "*.tar.gz" -type f -mtime +28 -delete
+
+              echo "File backup completed successfully"
+            env:
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-bucket-name
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-secret-key
+            volumeMounts:
+            - name: file-storage
+              mountPath: /data
+              readOnly: true
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
+          volumes:
+          - name: file-storage
+            persistentVolumeClaim:
+              claimName: shared-data-pvc
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+
+---
+# Configuration Backup CronJob
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: config-backup
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: config
+spec:
+  schedule: "0 1 * * 1"  # Weekly on Monday at 1 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: config-backup
+        spec:
+          serviceAccountName: backup-service-account
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+              BACKUP_DIR="/backups/config"
+
+              # Create backup directory
+              mkdir -p $BACKUP_DIR
+
+              # Backup Kubernetes configurations
+              echo "Backing up Kubernetes configurations..."
+              kubectl get all,configmaps,secrets,pvc,ingress -n knowledge-base -o yaml > "${BACKUP_DIR}/k8s-config-${TIMESTAMP}.yaml"
+
+              # Backup Helm releases
+              echo "Backing up Helm releases..."
+              helm list -n knowledge-base -o yaml > "${BACKUP_DIR}/helm-releases-${TIMESTAMP}.yaml"
+
+              # Backup values files
+              helm get values knowledge-base -n knowledge-base > "${BACKUP_DIR}/helm-values-${TIMESTAMP}.yaml"
+
+              # Upload to S3
+              if [[ -n "${AWS_S3_BUCKET}" ]]; then
+                echo "Uploading config to S3..."
+                aws s3 cp $BACKUP_DIR s3://${AWS_S3_BUCKET}/config/${TIMESTAMP}/ --recursive
+              fi
+
+              # Cleanup old config backups (keep last 30 days)
+              find $BACKUP_DIR -name "*.yaml" -type f -mtime +30 -delete
+
+              echo "Configuration backup completed successfully"
+            env:
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-bucket-name
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-secret-key
+            volumeMounts:
+            - name: backup-storage
+              mountPath: /backups
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc
+
+---
+# Backup Service Account and RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-service-account
+  namespace: knowledge-base
+  annotations:
+    iam.amazonaws.com/role: arn:aws:iam::ACCOUNT:role/knowledge-base-backup-role
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: backup-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: backup-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: backup-role
+subjects:
+- kind: ServiceAccount
+  name: backup-service-account
+  namespace: knowledge-base
+
+---
+# Disaster Recovery Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: disaster-recovery
+  namespace: knowledge-base
+  labels:
+    app: disaster-recovery
+    component: recovery
+spec:
+  template:
+    metadata:
+      labels:
+        app: disaster-recovery
+    spec:
+      serviceAccountName: backup-service-account
+      restartPolicy: Never
+      containers:
+      - name: recovery
+        image: alpine:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -euo pipefail
+          TIMESTAMP=$RECOVERY_TIMESTAMP
+
+          # Install required tools
+          apk add --no-cache curl tar gzip aws-cli
+
+          # Download backups from S3
+          if [[ -n "${AWS_S3_BUCKET}" && -n "${TIMESTAMP}" ]]; then
+            echo "Downloading backups from S3 for timestamp: ${TIMESTAMP}"
+            aws s3 cp s3://${AWS_S3_BUCKET}/database/${TIMESTAMP}/ /tmp/database-backup/ --recursive
+            aws s3 cp s3://${AWS_S3_BUCKET}/files/${TIMESTAMP}/ /tmp/file-backup/ --recursive
+            aws s3 cp s3://${AWS_S3_BUCKET}/config/${TIMESTAMP}/ /tmp/config-backup/ --recursive
+          else
+            echo "ERROR: Recovery timestamp or S3 bucket not specified"
+            exit 1
+          fi
+
+          # Extract and restore database backups
+          echo "Restoring databases..."
+          gunzip -c /tmp/database-backup/*.gz > /tmp/restored.db
+          cp /tmp/restored.db /data/knowledge_base.db
+
+          # Extract and restore file backups
+          echo "Restoring files..."
+          mkdir -p /data/uploads /data/documents
+          tar -xzf /tmp/file-backup/uploads_*.tar.gz -C /data/uploads/
+          tar -xzf /tmp/file-backup/documents_*.tar.gz -C /data/documents/
+
+          # Restore Kubernetes configurations
+          echo "Restoring Kubernetes configurations..."
+          kubectl apply -f /tmp/config-backup/k8s-config-*.yaml
+
+          # Restart services
+          echo "Restarting services..."
+          kubectl rollout restart deployment/knowledge-api -n knowledge-base
+          kubectl rollout restart deployment/chat-api -n knowledge-base
+          kubectl rollout restart deployment/frontend -n knowledge-base
+
+          echo "Disaster recovery completed successfully"
+        env:
+        - name: RECOVERY_TIMESTAMP
+          value: "20250110_020000"  # Set this to the desired recovery timestamp
+        - name: AWS_S3_BUCKET
+          valueFrom:
+            secretKeyRef:
+              name: backup-secrets
+              key: backup-bucket-name
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: backup-secrets
+              key: backup-access-key
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backup-secrets
+              key: backup-secret-key
+        volumeMounts:
+        - name: database-data
+          mountPath: /data
+        - name: backup-storage
+          mountPath: /tmp/backups
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+      volumes:
+      - name: database-data
+        persistentVolumeClaim:
+          claimName: knowledge-api-data-pvc
+      - name: backup-storage
+        persistentVolumeClaim:
+          claimName: backup-pvc
+
+---
+# Backup Verification Job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: backup-verification
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: verification
+spec:
+  schedule: "0 4 * * *"  # Daily at 4 AM (after backup)
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: backup-verification
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: verify
+            image: alpine:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+
+              # Install required tools
+              apk add --no-cache aws-cli sqlite3
+
+              # Verify recent backups exist in S3
+              if [[ -n "${AWS_S3_BUCKET}" ]]; then
+                echo "Verifying backups in S3..."
+
+                # Check database backups
+                DB_BACKUPS=$(aws s3 ls s3://${AWS_S3_BUCKET}/database/ --recursive | grep "$(date +%Y%m%d)" | wc -l)
+                if [[ $DB_BACKUPS -eq 0 ]]; then
+                  echo "ERROR: No database backups found for today"
+                  exit 1
+                fi
+
+                # Check file backups
+                FILE_BACKUPS=$(aws s3 ls s3://${AWS_S3_BUCKET}/files/ --recursive | grep "$(date +%Y%m%d)" | wc -l)
+                if [[ $FILE_BACKUPS -eq 0 ]]; then
+                  echo "WARNING: No file backups found for today"
+                fi
+
+                echo "Backup verification completed successfully"
+                echo "Database backups: $DB_BACKUPS"
+                echo "File backups: $FILE_BACKUPS"
+              else
+                echo "ERROR: S3 bucket not configured"
+                exit 1
+              fi
+            env:
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-bucket-name
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-secret-key
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi
+
+---
+# Data Retention Policy Job
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: data-retention
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: retention
+spec:
+  schedule: "0 5 * * 0"  # Weekly on Sunday at 5 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: data-retention
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: retention
+            image: aws-cli:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+
+              # Clean up old backups from S3 according to retention policy
+              if [[ -n "${AWS_S3_BUCKET}" ]]; then
+                echo "Cleaning up old backups according to retention policy..."
+
+                # Delete database backups older than 90 days
+                aws s3 rm s3://${AWS_S3_BUCKET}/database/ --recursive --exclude "*" --include "*$(date -d '90 days ago' +%Y%m%d)*"
+
+                # Delete file backups older than 180 days
+                aws s3 rm s3://${AWS_S3_BUCKET}/files/ --recursive --exclude "*" --include "*$(date -d '180 days ago' +%Y%m%d)*"
+
+                # Delete config backups older than 365 days
+                aws s3 rm s3://${AWS_S3_BUCKET}/config/ --recursive --exclude "*" --include "*$(date -d '365 days ago' +%Y%m%d)*"
+
+                echo "Data retention cleanup completed"
+              fi
+            env:
+            - name: AWS_S3_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-bucket-name
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-access-key
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backup-secrets
+                  key: backup-secret-key
+            resources:
+              requests:
+                cpu: 100m
+                memory: 128Mi
+              limits:
+                cpu: 250m
+                memory: 256Mi

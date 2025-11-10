@@ -1,0 +1,78 @@
+# Manufacturing Knowledge Base Helm Chart
+# Comprehensive cloud-native deployment chart
+
+apiVersion: v2
+name: knowledge-base
+description: Manufacturing Knowledge Base System - Advanced RAG, Multi-Agent, and Observability Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+home: https://github.com/gavinwork-spec/Knowledge-base
+icon: https://raw.githubusercontent.com/gavinwork-spec/Knowledge-base/main/assets/knowledge-base-icon.png
+sources:
+  - https://github.com/gavinwork-spec/Knowledge-base
+maintainers:
+  - name: Knowledge Base Team
+    email: platform-team@company.com
+    url: https://github.com/gavinwork-spec
+keywords:
+  - manufacturing
+  - knowledge-base
+  - rag
+  - multi-agent
+  - observability
+  - langchain
+  - llama-index
+  - prometheus
+  - grafana
+annotations:
+  category: Analytics
+  licenses: MIT
+  dependencies: |
+    This chart depends on the following subcharts:
+    - Redis (caching)
+    - PostgreSQL (database)
+    - Prometheus (monitoring)
+    - Grafana (visualization)
+  deployment: |
+    ## Quick Start
+    ```bash
+    helm repo add knowledge-base https://github.com/gavinwork-spec/Knowledge-base/charts
+    helm install knowledge-base knowledge-base/knowledge-base
+    ```
+
+## Dependencies
+dependencies:
+  - name: redis
+    version: "17.11.3"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+
+  - name: postgresql
+    version: "12.5.9"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+
+  - name: prometheus
+    version: "23.1.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: monitoring.enabled
+
+  - name: grafana
+    version: "6.58.8"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: monitoring.enabled
+
+## Chart Requirements
+kubeVersion: ">=1.25.0-0"
+tillerVersion: ">=2.16.0"
+
+## Chart Features
+- Multi-service API deployment (Knowledge, Chat, Reminders)
+- Advanced auto-scaling (HPA, VPA, Cluster Autoscaler)
+- Zero-downtime deployment strategies (Canary, Blue-Green)
+- Comprehensive monitoring and observability
+- Security and GDPR compliance
+- Backup and disaster recovery
+- Ingress with TLS and security headers
+- Resource optimization and cost management

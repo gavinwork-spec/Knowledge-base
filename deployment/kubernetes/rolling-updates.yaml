@@ -1,0 +1,509 @@
+# Kubernetes Rolling Updates and Zero-Downtime Deployment Strategy
+# Advanced deployment configurations for Manufacturing Knowledge Base
+
+---
+# Advanced Deployment Strategy with Canary Releases
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: knowledge-api-rollout
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    component: rollout
+spec:
+  replicas: 3
+  strategy:
+    # Canary deployment strategy
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: {duration: 2m}
+      - setWeight: 40
+      - pause: {duration: 2m}
+      - setWeight: 60
+      - pause: {duration: 2m}
+      - setWeight: 80
+      - pause: {duration: 2m}
+      # Analysis for automated promotion
+      analysis:
+        templates:
+        - templateName: success-rate
+        - templateName: latency
+        args:
+        - name: service-name
+          value: knowledge-api-service
+        startingStep: 2
+        interval: 30s
+  selector:
+    matchLabels:
+      app: knowledge-api
+  template:
+    metadata:
+      labels:
+        app: knowledge-api
+        version: canary
+    spec:
+      containers:
+      - name: knowledge-api
+        image: knowledge-base/knowledge-api:latest
+        ports:
+        - containerPort: 8001
+        env:
+        - name: VERSION
+          value: "canary"
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# Analysis Template for Automated Deployment Analysis
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: success-rate
+  namespace: knowledge-base
+spec:
+  args:
+  - name: service-name
+  metrics:
+  - name: success-rate
+    interval: 30s
+    count: 10
+    successCondition: result[0] >= 0.95
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: http://prometheus-service:9090
+        query: |
+          sum(rate(http_requests_total{service="{{args.service-name}}",status!~"5.."}[2m])) /
+          sum(rate(http_requests_total{service="{{args.service-name}}"}[2m]))
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: latency
+  namespace: knowledge-base
+spec:
+  args:
+  - name: service-name
+  metrics:
+  - name: latency
+    interval: 30s
+    count: 10
+    successCondition: result[0] <= 2.0
+    provider:
+      prometheus:
+        address: http://prometheus-service:9090
+        query: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{service="{{args.service-name}}"}[2m])) by (le))
+
+---
+# Blue-Green Deployment Strategy
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: frontend-rollout
+  namespace: knowledge-base
+  labels:
+    app: frontend
+    component: rollout
+spec:
+  replicas: 3
+  strategy:
+    blueGreen:
+      activeService: frontend-service
+      previewService: frontend-preview-service
+      autoPromotionEnabled: false
+      scaleDownDelaySeconds: 30
+      prePromotionAnalysis:
+        templates:
+        - templateName: success-rate
+        - templateName: latency
+        args:
+        - name: service-name
+          value: frontend-preview-service
+        interval: 30s
+      postPromotionAnalysis:
+        templates:
+        - templateName: success-rate
+        - templateName: latency
+        args:
+        - name: service-name
+          value: frontend-service
+        interval: 30s
+      previewReplicaCount: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        version: bluegreen
+    spec:
+      containers:
+      - name: frontend
+        image: knowledge-base/frontend:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+---
+# Preview Service for Blue-Green Deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-preview-service
+  namespace: knowledge-base
+  labels:
+    app: frontend
+    component: preview
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: frontend
+    version: bluegreen
+
+---
+# Deployment Strategies Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deployment-strategies
+  namespace: knowledge-base
+  labels:
+    component: deployment-config
+data:
+  strategies.yaml: |
+    deployment:
+      knowledge-api:
+        type: "canary"
+        replicas: 3
+        maxSurge: 1
+        maxUnavailable: 1
+        progressDeadlineSeconds: 600
+        minReadySeconds: 30
+        revisionHistoryLimit: 10
+
+      chat-api:
+        type: "canary"
+        replicas: 2
+        maxSurge: 1
+        maxUnavailable: 0
+        progressDeadlineSeconds: 600
+        minReadySeconds: 30
+        revisionHistoryLimit: 10
+
+      frontend:
+        type: "blueGreen"
+        replicas: 3
+        progressDeadlineSeconds: 600
+        minReadySeconds: 30
+        revisionHistoryLimit: 10
+
+      reminders-api:
+        type: "rolling"
+        replicas: 1
+        maxSurge: 1
+        maxUnavailable: 0
+        progressDeadlineSeconds: 600
+        minReadySeconds: 60
+        revisionHistoryLimit: 5
+
+    rollback:
+      enabled: true
+      automatic: true
+      thresholds:
+        error_rate: 0.05
+        latency_p95: 2.0
+        failure_count: 10
+      cooldown_period: 300
+
+---
+# Health Check Configurations
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: health-checks
+  namespace: knowledge-base
+  labels:
+    component: health-config
+data:
+  health-checks.yaml: |
+    liveness_probes:
+      api:
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        timeoutSeconds: 10
+        failureThreshold: 3
+        successThreshold: 1
+
+      frontend:
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 5
+        failureThreshold: 3
+        successThreshold: 1
+
+      redis:
+        initialDelaySeconds: 30
+        periodSeconds: 30
+        timeoutSeconds: 5
+        failureThreshold: 3
+        successThreshold: 1
+
+    readiness_probes:
+      api:
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+        successThreshold: 1
+
+      frontend:
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+        successThreshold: 1
+
+      redis:
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 3
+        failureThreshold: 3
+        successThreshold: 1
+
+    startup_probes:
+      api:
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 30
+        successThreshold: 1
+
+---
+# Database Migration Job Template
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: database-migration-template
+  namespace: knowledge-base
+  labels:
+    app: database-migration
+    component: migration
+spec:
+  template:
+    metadata:
+      labels:
+        app: database-migration
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: migration
+        image: knowledge-base/knowledge-api:latest
+        command: ["python", "migrate_database.py"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: MIGRATION_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['version']
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: migration-logs
+          mountPath: /app/logs
+      volumes:
+      - name: migration-logs
+        persistentVolumeClaim:
+          claimName: knowledge-api-logs-pvc
+
+---
+# Pre and Post Deployment Hooks
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pre-deployment-hook
+  namespace: knowledge-base
+  labels:
+    app: pre-deployment
+    component: hook
+spec:
+  template:
+    metadata:
+      labels:
+        app: pre-deployment
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: pre-deployment-check
+        image: knowledge-base/knowledge-api:latest
+        command: ["python", "pre_deployment_check.py"]
+        env:
+        - name: DEPLOYMENT_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['version']
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: post-deployment-hook
+  namespace: knowledge-base
+  labels:
+    app: post-deployment
+    component: hook
+spec:
+  template:
+    metadata:
+      labels:
+        app: post-deployment
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: post-deployment-check
+        image: knowledge-base/knowledge-api:latest
+        command: ["python", "post_deployment_check.py"]
+        env:
+        - name: DEPLOYMENT_VERSION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['version']
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+
+---
+# Service Mesh Configuration (if using Istio)
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: knowledge-api-destination
+  namespace: knowledge-base
+spec:
+  host: knowledge-api-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 50
+        maxRequestsPerConnection: 10
+    loadBalancer:
+      simple: LEAST_CONN
+    circuitBreaker:
+      consecutiveErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 30s
+      baseEjectionTime: 30s
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: knowledge-api-virtualservice
+  namespace: knowledge-base
+spec:
+  hosts:
+  - knowledge-api-service
+  http:
+  - match:
+    - headers:
+        version:
+          exact: canary
+    route:
+    - destination:
+        host: knowledge-api-service
+        subset: canary
+      weight: 100
+  - route:
+    - destination:
+        host: knowledge-api-service
+        subset: stable
+      weight: 100
+
+---
+# Service Level Objectives (SLOs)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: slo-config
+  namespace: knowledge-base
+data:
+  slo.yaml: |
+    service_level_objectives:
+      availability:
+        target: 99.9
+        window: 30d
+
+      latency:
+        p50_target: 200ms
+        p95_target: 1s
+        p99_target: 2s
+
+      error_rate:
+        target: 0.01
+        window: 1h
+
+      throughput:
+        min_requests_per_second: 100
+
+    alerting:
+      burn_rate_alerts:
+        - name: "fast_burn"
+          threshold: 14.4
+          window: 1h
+          severity: "critical"
+        - name: "slow_burn"
+          threshold: 6
+          window: 6h
+          severity: "warning"

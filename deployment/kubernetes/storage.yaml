@@ -1,0 +1,318 @@
+# Kubernetes Storage Configuration for Manufacturing Knowledge Base
+# Persistent volumes and storage classes
+
+---
+# Storage Class for SSD-backed storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ssd-storage
+  labels:
+    type: ssd
+    performance: high
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp3
+  iops: "3000"
+  throughput: "125"
+  fsType: ext4
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+mountOptions:
+- discard
+---
+# Storage Class for standard storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard-storage
+  labels:
+    type: standard
+    performance: medium
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: gp2
+  fsType: ext4
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+---
+# Storage Class for backup storage
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: backup-storage
+  labels:
+    type: backup
+    performance: low
+provisioner: kubernetes.io/aws-ebs
+parameters:
+  type: sc1
+  fsType: ext4
+allowVolumeExpansion: true
+reclaimPolicy: Retain
+---
+# Persistent Volume Claim for Knowledge API Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: knowledge-api-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 20Gi
+  selector:
+    matchLabels:
+      app: knowledge-api
+      type: data
+---
+# Persistent Volume Claim for Knowledge API Logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: knowledge-api-logs-pvc
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    component: logs
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: standard-storage
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Persistent Volume Claim for Chat API Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chat-api-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Persistent Volume Claim for Chat API Logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chat-api-logs-pvc
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    component: logs
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: standard-storage
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Persistent Volume Claim for Reminders API Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reminders-api-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Persistent Volume Claim for Reminders API Logs
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: reminders-api-logs-pvc
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    component: logs
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: standard-storage
+  resources:
+    requests:
+      storage: 2Gi
+---
+# Persistent Volume Claim for Redis Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: redis
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Persistent Volume Claim for PostgreSQL Data (if used)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: postgres
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Persistent Volume Claim for Prometheus Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: prometheus
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: ssd-storage
+  resources:
+    requests:
+      storage: 100Gi
+---
+# Persistent Volume Claim for Grafana Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: grafana
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: standard-storage
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Persistent Volume Claim for Backups
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: backup-pvc
+  namespace: knowledge-base
+  labels:
+    app: backup
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: backup-storage
+  resources:
+    requests:
+      storage: 200Gi
+---
+# Persistent Volume Claim for Shared Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared-data-pvc
+  namespace: knowledge-base
+  labels:
+    app: shared
+    component: storage
+spec:
+  accessModes:
+  - ReadWriteMany
+  storageClassName: standard-storage
+  resources:
+    requests:
+      storage: 50Gi
+---
+# Actual Persistent Volumes (if using pre-provisioned volumes)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: knowledge-api-data-pv
+  labels:
+    app: knowledge-api
+    type: data
+    performance: high
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ssd-storage
+  hostPath:
+    path: /data/knowledge-base/api-data
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-data-pv
+  labels:
+    app: redis
+    type: data
+    performance: high
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ssd-storage
+  hostPath:
+    path: /data/knowledge-base/redis-data
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: backup-pv
+  labels:
+    app: backup
+    type: backup
+    performance: low
+spec:
+  capacity:
+    storage: 200Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: backup-storage
+  hostPath:
+    path: /data/knowledge-base/backups

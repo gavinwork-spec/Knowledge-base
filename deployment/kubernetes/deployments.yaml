@@ -1,0 +1,604 @@
+# Kubernetes Deployments for Manufacturing Knowledge Base
+# Main application deployments with resource management and health checks
+
+---
+# Knowledge API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knowledge-api
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    component: backend
+    version: v1
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+    rollme: {{ randAlphaNum 5 | quote }}
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: knowledge-api
+  template:
+    metadata:
+      labels:
+        app: knowledge-api
+        component: backend
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9001"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: knowledge-api
+        image: knowledge-base/knowledge-api:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+        - name: metrics
+          containerPort: 9001
+          protocol: TCP
+        - name: websocket
+          containerPort: 8765
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8001"
+        - name: METRICS_PORT
+          value: "9001"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: REDIS_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: LOG_LEVEL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: JWT_SECRET
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: OPENAI_API_KEY
+        - name: EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-api-config
+              key: EMBEDDING_MODEL
+        - name: PROMETHEUS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: PROMETHEUS_ENABLED
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: knowledge-api-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: knowledge-api-logs-pvc
+      nodeSelector:
+        node-type: application
+      tolerations:
+      - key: "workload"
+        operator: "Equal"
+        value: "application"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - knowledge-api
+              topologyKey: kubernetes.io/hostname
+
+---
+# Chat API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-api
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    component: backend
+    version: v1
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: chat-api
+  template:
+    metadata:
+      labels:
+        app: chat-api
+        component: backend
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9002"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: chat-api
+        image: knowledge-base/knowledge-api:latest
+        imagePullPolicy: Always
+        command: ["python", "api_chat_interface.py", "--port", "8002", "--host", "0.0.0.0"]
+        ports:
+        - name: http
+          containerPort: 8002
+          protocol: TCP
+        - name: metrics
+          containerPort: 9002
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8002"
+        - name: METRICS_PORT
+          value: "9002"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: REDIS_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: LOG_LEVEL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: JWT_SECRET
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: OPENAI_API_KEY
+        - name: CHAT_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: chat-api-config
+              key: CHAT_MODEL
+        - name: CHAT_TEMPERATURE
+          valueFrom:
+            configMapKeyRef:
+              name: chat-api-config
+              key: CHAT_TEMPERATURE
+        - name: MAX_TOKENS
+          valueFrom:
+            configMapKeyRef:
+              name: chat-api-config
+              key: MAX_TOKENS
+        - name: PROMETHEUS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: PROMETHEUS_ENABLED
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: chat-api-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: chat-api-logs-pvc
+
+---
+# Reminders API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reminders-api
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    component: backend
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: reminders-api
+  template:
+    metadata:
+      labels:
+        app: reminders-api
+        component: backend
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9000"
+        prometheus.io/path: "/metrics"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: reminders-api
+        image: knowledge-base/knowledge-api:latest
+        imagePullPolicy: Always
+        command: ["python", "api_server_reminders.py", "--port", "8000", "--host", "0.0.0.0"]
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        - name: metrics
+          containerPort: 9000
+          protocol: TCP
+        env:
+        - name: PORT
+          value: "8000"
+        - name: METRICS_PORT
+          value: "9000"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: REDIS_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: LOG_LEVEL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: JWT_SECRET
+        - name: SMTP_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: reminders-api-config
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: reminders-api-config
+              key: SMTP_PORT
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: knowledge-base-secrets
+              key: SMTP_PASSWORD
+        - name: PROMETHEUS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: knowledge-base-config
+              key: PROMETHEUS_ENABLED
+        resources:
+          requests:
+            cpu: 125m
+            memory: 256Mi
+          limits:
+            cpu: 250m
+            memory: 512Mi
+        volumeMounts:
+        - name: data-volume
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: data-volume
+        persistentVolumeClaim:
+          claimName: reminders-api-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: reminders-api-logs-pvc
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: knowledge-base
+  labels:
+    app: frontend
+    component: ui
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        component: ui
+        version: v1
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: frontend
+        image: knowledge-base/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        env:
+        - name: API_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: API_BASE_URL
+        - name: CHAT_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: CHAT_API_URL
+        - name: REMINDERS_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: REMINDERS_API_URL
+        - name: WEBSOCKET_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: WEBSOCKET_URL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /nginx-health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /nginx-health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      nodeSelector:
+        node-type: frontend
+
+---
+# Redis Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: knowledge-base
+  labels:
+    app: redis
+    component: cache
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        component: cache
+        version: v1
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        imagePullPolicy: Always
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        - --maxmemory
+        - "512mb"
+        - --maxmemory-policy
+        - "allkeys-lru"
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        ports:
+        - name: redis
+          containerPort: 6379
+          protocol: TCP
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secrets
+              key: redis-password
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - -a
+            - $(REDIS_PASSWORD)
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-data-pvc
+      nodeSelector:
+        node-type: database

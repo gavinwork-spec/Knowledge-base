@@ -1,0 +1,411 @@
+# Kubernetes Ingress Configuration for Manufacturing Knowledge Base
+# External access with TLS termination and routing
+
+---
+# Main Application Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: knowledge-base-ingress
+  namespace: knowledge-base
+  annotations:
+    # Ingress Controller Configuration
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # TLS Configuration
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "true"
+
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+
+    # Connection Limits
+    nginx.ingress.kubernetes.io/connection-proxy-header: "keep-alive"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+
+    # Large Request Support (for file uploads)
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+
+    # WebSocket Support
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+    # Custom Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Frame-Options DENY always;
+      add_header X-Content-Type-Options nosniff always;
+      add_header X-XSS-Protection "1; mode=block" always;
+      add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+      add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss:;" always;
+      add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # CORS Configuration
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://knowledge-base.company.com,https://app.knowledge-base.company.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+
+    # Custom Error Pages
+    nginx.ingress.kubernetes.io/default-backend: "error-page-service"
+
+    # Logging
+    nginx.ingress.kubernetes.io/log-format-upstream: '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent" $request_length $request_time [$proxy_upstream_name] [$proxy_alternative_upstream_name] $upstream_addr $upstream_response_length $upstream_response_time $upstream_status $req_id'
+
+    # Custom annotations for AWS ALB (if using)
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/success-codes: '200-399'
+    alb.ingress.kubernetes.io/load-balancer-attributes: access_logs.s3.enabled=true,access_logs.s3.bucket=knowledge-base-logs,access_logs.s3.prefix=alb
+
+    # WAF Configuration (if using AWS WAF)
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:region:account:regional/webacl/knowledge-base-waf/id
+
+spec:
+  tls:
+  - hosts:
+    - knowledge-base.company.com
+    - api.knowledge-base.company.com
+    - chat-api.knowledge-base.company.com
+    - reminders-api.knowledge-base.company.com
+    - app.knowledge-base.company.com
+    secretName: tls-certificate
+  rules:
+  # Main Application
+  - host: knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+
+  # API Routes
+  - host: api.knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: knowledge-api-service
+            port:
+              number: 8001
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: knowledge-api-service
+            port:
+              number: 8765
+
+  # Chat API
+  - host: chat-api.knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: chat-api-service
+            port:
+              number: 8002
+
+  # Reminders API
+  - host: reminders-api.knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reminders-api-service
+            port:
+              number: 8000
+
+  # App Subdomain (alternative frontend access)
+  - host: app.knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+
+---
+# Monitoring Ingress (Internal Access)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: knowledge-base
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: monitoring-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Monitoring Authentication Required"
+    # Only allow internal access
+    nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+spec:
+  tls:
+  - hosts:
+    - monitoring.knowledge-base.company.com
+    secretName: tls-certificate
+  rules:
+  # Grafana
+  - host: monitoring.knowledge-base.company.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana-service
+            port:
+              number: 3000
+
+---
+# API Documentation Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: docs-ingress
+  namespace: knowledge-base
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "50"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      add_header X-Robots-Tag "noindex, nofollow" always;
+spec:
+  tls:
+  - hosts:
+    - docs.knowledge-base.company.com
+    secretName: tls-certificate
+  rules:
+  - host: docs.knowledge-base.company.com
+    http:
+      paths:
+      # Knowledge API Docs
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: knowledge-api-service
+            port:
+              number: 8001
+      # Chat API Docs
+      - path: /chat
+        pathType: Prefix
+        backend:
+          service:
+            name: chat-api-service
+            port:
+              number: 8002
+      # Reminders API Docs
+      - path: /reminders
+        pathType: Prefix
+        backend:
+          service:
+            name: reminders-api-service
+            port:
+              number: 8000
+
+---
+# Ingress for External API Access (if needed)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: external-api-ingress
+  namespace: knowledge-base
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "200"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    # API Key Authentication
+    nginx.ingress.kubernetes.io/auth-type: "basic"
+    nginx.ingress.kubernetes.io/auth-secret: "api-auth"
+    nginx.ingress.kubernetes.io/auth-realm: "API Authentication Required"
+    # CORS for external APIs
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization,X-API-Key"
+spec:
+  tls:
+  - hosts:
+    - api-external.knowledge-base.company.com
+    secretName: tls-certificate
+  rules:
+  - host: api-external.knowledge-base.company.com
+    http:
+      paths:
+      # Knowledge API External Access
+      - path: /knowledge
+        pathType: Prefix
+        backend:
+          service:
+            name: knowledge-api-service
+            port:
+              number: 8001
+      # Chat API External Access
+      - path: /chat
+        pathType: Prefix
+        backend:
+          service:
+            name: chat-api-service
+            port:
+              number: 8002
+
+---
+# Certificate Management with Cert-Manager (if using)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: knowledge-base-tls
+  namespace: knowledge-base
+spec:
+  secretName: tls-certificate
+  dnsNames:
+  - knowledge-base.company.com
+  - api.knowledge-base.company.com
+  - chat-api.knowledge-base.company.com
+  - reminders-api.knowledge-base.company.com
+  - app.knowledge-base.company.com
+  - monitoring.knowledge-base.company.com
+  - docs.knowledge-base.company.com
+  - api-external.knowledge-base.company.com
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+
+---
+# Error Page Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: error-page-service
+  namespace: knowledge-base
+  labels:
+    app: error-pages
+    component: nginx
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: error-pages
+
+---
+# Error Pages Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: error-pages
+  namespace: knowledge-base
+  labels:
+    app: error-pages
+    component: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: error-pages
+  template:
+    metadata:
+      labels:
+        app: error-pages
+        component: nginx
+    spec:
+      containers:
+      - name: error-pages
+        image: nginx:alpine
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        volumeMounts:
+        - name: error-pages-config
+          mountPath: /usr/share/nginx/html
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: error-pages-config
+        configMap:
+          name: error-pages-config
+
+---
+# Error Pages ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: error-pages-config
+  namespace: knowledge-base
+data:
+  404.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>404 - Page Not Found | Manufacturing Knowledge Base</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .error-code { font-size: 72px; color: #e74c3c; }
+            .error-message { font-size: 24px; color: #333; }
+            .home-link { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="error-code">404</div>
+        <div class="error-message">Page Not Found</div>
+        <p>The page you're looking for doesn't exist.</p>
+        <a href="/" class="home-link">Go Home</a>
+    </body>
+    </html>
+
+  50x.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Server Error | Manufacturing Knowledge Base</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            .error-code { font-size: 72px; color: #e74c3c; }
+            .error-message { font-size: 24px; color: #333; }
+            .home-link { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="error-code">500</div>
+        <div class="error-message">Server Error</div>
+        <p>Something went wrong on our end. Please try again later.</p>
+        <a href="/" class="home-link">Go Home</a>
+    </body>
+    </html>

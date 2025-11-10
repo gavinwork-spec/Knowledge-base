@@ -1,0 +1,511 @@
+# Manufacturing Knowledge Base - Helm Values Configuration
+# Comprehensive configuration for all system components
+
+# Global Configuration
+global:
+  # Image Registry and Repository
+  imageRegistry: "docker.io"
+  imageRepository: "knowledge-base"
+  imageTag: "latest"
+  imagePullPolicy: "Always"
+
+  # Security Context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+  # Common Environment Variables
+  commonEnv:
+    LOG_LEVEL: "INFO"
+    LOG_FORMAT: "json"
+    PROMETHEUS_ENABLED: "true"
+
+  # Ingress Configuration
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+  # Resource Management
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+
+# Frontend Configuration
+frontend:
+  enabled: true
+  replicaCount: 3
+
+  image:
+    repository: "knowledge-base/frontend"
+    tag: "latest"
+    pullPolicy: "Always"
+
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 80
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  config:
+    API_BASE_URL: "https://api.knowledge-base.company.com"
+    CHAT_API_URL: "https://chat-api.knowledge-base.company.com"
+    REMINDERS_API_URL: "https://reminders-api.knowledge-base.company.com"
+    WEBSOCKET_URL: "wss://api.knowledge-base.company.com/ws"
+    NODE_ENV: "production"
+
+# Knowledge API Configuration
+knowledgeApi:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: "knowledge-base/knowledge-api"
+    tag: "latest"
+    pullPolicy: "Always"
+
+  service:
+    type: ClusterIP
+    ports:
+      http: 8001
+      metrics: 9001
+      websocket: 8765
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  config:
+    PORT: "8001"
+    METRICS_PORT: "9001"
+    DATABASE_URL: "sqlite:///data/knowledge_base.db"
+    REDIS_URL: "redis://redis-service:6379/0"
+    EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+    VECTOR_STORE_TYPE: "chromadb"
+    SEARCH_TOP_K: "10"
+    SEARCH_THRESHOLD: "0.7"
+    HYBRID_SEARCH_ENABLED: "true"
+
+  persistence:
+    enabled: true
+    data:
+      storageClass: "ssd-storage"
+      size: "20Gi"
+    logs:
+      storageClass: "standard-storage"
+      size: "5Gi"
+
+# Chat API Configuration
+chatApi:
+  enabled: true
+  replicaCount: 2
+
+  image:
+    repository: "knowledge-base/knowledge-api"
+    tag: "latest"
+    pullPolicy: "Always"
+
+  command:
+    - "python"
+    - "api_chat_interface.py"
+    - "--port"
+    - "8002"
+    - "--host"
+    - "0.0.0.0"
+
+  service:
+    type: ClusterIP
+    ports:
+      http: 8002
+      metrics: 9002
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 75
+    targetMemoryUtilizationPercentage: 85
+
+  config:
+    PORT: "8002"
+    METRICS_PORT: "9002"
+    DATABASE_URL: "sqlite:///data/knowledge_base.db"
+    REDIS_URL: "redis://redis-service:6379/1"
+    CHAT_MODEL: "gpt-4"
+    CHAT_TEMPERATURE: "0.7"
+    MAX_TOKENS: "2000"
+    MAX_CONVERSATION_LENGTH: "20"
+    CONTEXT_WINDOW_SIZE: "10"
+
+  persistence:
+    enabled: true
+    data:
+      storageClass: "ssd-storage"
+      size: "10Gi"
+    logs:
+      storageClass: "standard-storage"
+      size: "5Gi"
+
+# Reminders API Configuration
+remindersApi:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: "knowledge-base/knowledge-api"
+    tag: "latest"
+    pullPolicy: "Always"
+
+  command:
+    - "python"
+    - "api_server_reminders.py"
+    - "--port"
+    - "8000"
+    - "--host"
+    - "0.0.0.0"
+
+  service:
+    type: ClusterIP
+    ports:
+      http: 8000
+      metrics: 9000
+
+  resources:
+    requests:
+      cpu: "125m"
+      memory: "256Mi"
+    limits:
+      cpu: "250m"
+      memory: "512Mi"
+
+  config:
+    PORT: "8000"
+    METRICS_PORT: "9000"
+    DATABASE_URL: "sqlite:///data/knowledge_base.db"
+    REDIS_URL: "redis://redis-service:6379/2"
+    SMTP_HOST: "smtp.company.com"
+    SMTP_PORT: "587"
+    SMTP_USE_TLS: "true"
+    DEFAULT_REMINDER_TIME: "09:00"
+    MAX_REMINDERS_PER_USER: "100"
+
+  persistence:
+    enabled: true
+    data:
+      storageClass: "ssd-storage"
+      size: "5Gi"
+    logs:
+      storageClass: "standard-storage"
+      size: "2Gi"
+
+# Redis Configuration
+redis:
+  enabled: true
+  auth:
+    enabled: true
+    existingSecret: "redis-secrets"
+    existingSecretPasswordKey: "redis-password"
+
+  master:
+    persistence:
+      enabled: true
+      storageClass: "ssd-storage"
+      size: "10Gi"
+
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      storageClass: "standard-storage"
+      size: "5Gi"
+
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+# PostgreSQL Configuration (Optional)
+postgresql:
+  enabled: false
+  auth:
+    existingSecret: "postgres-secrets"
+    secretKeys:
+      adminPasswordKey: "postgres-password"
+      userPasswordKey: "password"
+    database: "knowledge_base"
+    username: "kb_user"
+
+  primary:
+    persistence:
+      enabled: true
+      storageClass: "ssd-storage"
+      size: "50Gi"
+
+  readReplicas:
+    replicaCount: 1
+    persistence:
+      enabled: true
+      storageClass: "standard-storage"
+      size: "25Gi"
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+
+  prometheus:
+    enabled: true
+    server:
+      persistentVolume:
+        enabled: true
+        storageClass: "ssd-storage"
+        size: "100Gi"
+      retention: "15d"
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "1Gi"
+        limits:
+          cpu: "1000m"
+          memory: "2Gi"
+
+    alertmanager:
+      enabled: true
+      persistentVolume:
+        enabled: true
+        storageClass: "standard-storage"
+        size: "5Gi"
+
+    pushgateway:
+      enabled: true
+
+    nodeExporter:
+      enabled: true
+
+  grafana:
+    enabled: true
+    adminUser: "admin"
+    persistence:
+      enabled: true
+      storageClass: "standard-storage"
+      size: "10Gi"
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+
+    sidecar:
+      datasources:
+        enabled: true
+      dashboards:
+        enabled: true
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: "nginx"
+
+  hosts:
+    - host: knowledge-base.company.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: frontend
+          port: 80
+    - host: api.knowledge-base.company.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: knowledge-api
+          port: 8001
+        - path: /ws
+          pathType: Prefix
+          service: knowledge-api
+          port: 8765
+    - host: chat-api.knowledge-base.company.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: chat-api
+          port: 8002
+    - host: reminders-api.knowledge-base.company.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: reminders-api
+          port: 8000
+
+  tls:
+    - secretName: knowledge-base-tls
+      hosts:
+        - knowledge-base.company.com
+        - api.knowledge-base.company.com
+        - chat-api.knowledge-base.company.com
+        - reminders-api.knowledge-base.company.com
+
+# Security Configuration
+security:
+  enabled: true
+  gdprCompliance: true
+  encryptionAtRest: true
+  auditLogging: true
+
+  rbac:
+    create: true
+
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT:role/knowledge-base-role"
+
+  podSecurityPolicy:
+    enabled: false
+
+  networkPolicy:
+    enabled: true
+
+# Backup Configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"
+  retention: "30d"
+  storageClass: "backup-storage"
+  size: "200Gi"
+
+  s3:
+    enabled: false
+    bucket: "knowledge-base-backups"
+    region: "us-west-2"
+
+  annotations:
+    iam.amazonaws.com/role: "arn:aws:iam::ACCOUNT:role/knowledge-base-backup-role"
+
+# Advanced Configuration
+advanced:
+  # Deployment Strategies
+  deploymentStrategy:
+    knowledgeApi: "canary"
+    chatApi: "canary"
+    frontend: "blueGreen"
+    remindersApi: "rolling"
+
+  # Pod Disruption Budgets
+  podDisruptionBudget:
+    enabled: true
+    minAvailable:
+      knowledgeApi: 1
+      chatApi: 1
+      frontend: 2
+      redis: 1
+
+  # Node Affinity and Tolerations
+  nodeSelector:
+    node-type: "application"
+
+  tolerations:
+    - key: "workload"
+      operator: "Equal"
+      value: "application"
+      effect: "NoSchedule"
+
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                    - knowledge-api
+            topologyKey: kubernetes.io/hostname
+
+# Feature Flags
+features:
+  advancedSearch: true
+  chatInterface: true
+  reminders: true
+  analytics: true
+  multiLanguage: false
+  experimentalFeatures: false
+
+# Development/Testing Configuration
+development:
+  enabled: false
+  debug: false
+  hotReload: false
+  testMode: false
+
+  imagePullPolicy: "Always"
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+
+# Production Configuration
+production:
+  enabled: true
+
+  imagePullPolicy: "IfNotPresent"
+
+  podAntiAffinity: "hard"
+  nodeAffinity: "required"
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "4Gi"

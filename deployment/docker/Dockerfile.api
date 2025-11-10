@@ -1,0 +1,103 @@
+# Manufacturing Knowledge Base API Dockerfile
+# Multi-stage build for optimal size and security
+
+# Build stage
+FROM python:3.11-slim as builder
+
+# Set build arguments
+ARG BUILD_DATE
+ARG VERSION
+ARG VCS_REF
+
+# Labels
+LABEL org.label-schema.build-date=$BUILD_DATE \
+      org.label-schema.name="Knowledge Base API" \
+      org.label-schema.description="Manufacturing Knowledge Base API Services" \
+      org.label-schema.url="https://github.com/gavinwork-spec/Knowledge-base" \
+      org.label-schema.vcs-ref=$VCS_REF \
+      org.label-schema.vcs-url="https://github.com/gavinwork-spec/Knowledge-base.git" \
+      org.label-schema.vendor="Knowledge Base Team" \
+      org.label-schema.version=$VERSION \
+      org.label-schema.schema-version="1.0"
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies for building
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    git \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy requirements first for better caching
+COPY requirements*.txt ./
+
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    pip install -r requirements_hybrid_search.txt && \
+    pip install -r requirements_personalized_search.txt
+
+# Production stage
+FROM python:3.11-slim as production
+
+# Set production environment
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/home/app/.local/bin:$PATH"
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libpq5 \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user
+RUN groupadd -r app && useradd -r -g app app
+
+# Set working directory
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data/processed \
+    /app/data/reports \
+    /app/data/uploads \
+    /app/logs \
+    && chown -R app:app /app
+
+# Set ownership and permissions
+RUN chown -R app:app /app
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8000}/health || exit 1
+
+# Expose ports (default to 8000, can be overridden)
+EXPOSE 8000 8001 8002
+
+# Default command (can be overridden)
+CMD ["python", "api_server_knowledge.py", "--port", "8001", "--host", "0.0.0.0"]
+
+# Alternative service-specific Dockerfiles can reference this
+# and override the CMD for specific services:
+# - Knowledge API: CMD ["python", "api_server_knowledge.py", "--port", "8001", "--host", "0.0.0.0"]
+# - Chat API: CMD ["python", "api_chat_interface.py", "--port", "8002", "--host", "0.0.0.0"]
+# - Reminders API: CMD ["python", "api_server_reminders.py", "--port", "8000", "--host", "0.0.0.0"]

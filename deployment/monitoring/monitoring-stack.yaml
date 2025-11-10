@@ -1,0 +1,633 @@
+# Complete Monitoring Stack for Manufacturing Knowledge Base
+# Prometheus, Grafana, Jaeger, and AlertManager with comprehensive dashboards
+
+---
+# Prometheus Configuration
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: knowledge-base-prometheus
+  namespace: knowledge-base
+  labels:
+    app: prometheus
+    component: monitoring
+spec:
+  serviceAccountName: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      team: platform
+  ruleSelector:
+    matchLabels:
+      team: platform
+  alerting:
+    alertmanagers:
+    - namespace: knowledge-base
+      name: alertmanager
+      port: web
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  retention: 15d
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: ssd-storage
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+# Grafana Configuration
+apiVersion: integreatly.org/v1alpha1
+kind: Grafana
+metadata:
+  name: knowledge-base-grafana
+  namespace: knowledge-base
+  labels:
+    app: grafana
+    component: monitoring
+spec:
+  config:
+    auth:
+      disable_signout_menu: true
+    auth.anonymous:
+      enabled: false
+    auth.basic:
+      enabled: true
+    database:
+      host: grafana-db
+      name: grafana
+      password: grafana
+      user: grafana
+    log:
+      level: info
+      mode: console
+    security:
+      admin_user: admin
+      admin_password: admin123
+  dashboardLabelSelector:
+    - matchExpressions:
+        - key: app
+          operator: In
+          values:
+            - knowledge-base
+  datasources:
+    - name: Prometheus
+      type: prometheus
+      access: proxy
+      url: http://prometheus-service:9090
+      isDefault: true
+    - name: Jaeger
+      type: jaeger
+      access: proxy
+      url: http://jaeger-service:16686
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type: LoadBalancer
+    ports:
+      - name: web
+        port: 3000
+        targetPort: 3000
+  persistence:
+    type: pvc
+    size: 10Gi
+
+---
+# Grafana Dashboards
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: knowledge-base
+  labels:
+    app: grafana
+    component: dashboards
+data:
+  knowledge-base-overview.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Knowledge Base - Manufacturing Overview",
+        "tags": ["knowledge-base", "manufacturing"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "API Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{service=~\"knowledge-api|chat-api|reminders-api\"}[5m])) by (service)",
+                "legendFormat": "{{service}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Requests/sec"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "API Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{service=~\"knowledge-api|chat-api|reminders-api\",status=~\"5..\"}[5m])) by (service) / sum(rate(http_requests_total{service=~\"knowledge-api|chat-api|reminders-api\"}[5m])) by (service)",
+                "legendFormat": "{{service}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Error Rate",
+                "max": 1,
+                "min": 0
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Response Time (95th percentile)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=~\"knowledge-api|chat-api|reminders-api\"}[5m])) by (le, service))",
+                "legendFormat": "{{service}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Seconds"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Knowledge Base Metrics",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "knowledge_base_total_documents",
+                "legendFormat": "Total Documents"
+              },
+              {
+                "expr": "knowledge_base_search_requests_total",
+                "legendFormat": "Total Searches"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+  knowledge-base-performance.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Knowledge Base - Performance Metrics",
+        "tags": ["knowledge-base", "performance"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "CPU Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"knowledge-base\",pod=~\"knowledge-api|chat-api|reminders-api|frontend\"}[5m])) by (pod)",
+                "legendFormat": "{{pod}}"
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(container_memory_usage_bytes{namespace=\"knowledge-base\",pod=~\"knowledge-api|chat-api|reminders-api|frontend\"}) by (pod) / 1024 / 1024",
+                "legendFormat": "{{pod}}"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Memory (MB)"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Database Performance",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(sqlite_query_duration_seconds_sum[5m]) / rate(sqlite_query_duration_seconds_count[5m])",
+                "legendFormat": "Avg Query Time"
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "Cache Hit Rate",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total)",
+                "legendFormat": "Cache Hit Rate"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit",
+                "max": 1,
+                "min": 0
+              }
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "30s"
+      }
+    }
+
+---
+# Alert Manager Configuration
+apiVersion: monitoring.coreos.com/v1
+kind: Alertmanager
+metadata:
+  name: knowledge-base-alertmanager
+  namespace: knowledge-base
+  labels:
+    app: alertmanager
+    component: monitoring
+spec:
+  serviceAccountName: alertmanager
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    volumeClaimTemplate:
+      spec:
+        storageClassName: standard-storage
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+
+---
+# Alert Manager Configuration Secret
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-knowledge-base-alertmanager
+  namespace: knowledge-base
+  labels:
+    app: alertmanager
+    component: config
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      smtp_smarthost: 'smtp.company.com:587'
+      smtp_from: 'alerts@knowledge-base.company.com'
+      smtp_auth_username: 'alerts@knowledge-base.company.com'
+      smtp_auth_password: 'your-smtp-password'
+
+    templates:
+    - '/etc/alertmanager/templates/*.tmpl'
+
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'web.hook'
+      routes:
+      - match:
+          severity: critical
+        receiver: 'critical-alerts'
+        group_wait: 10s
+        repeat_interval: 30m
+      - match:
+          severity: warning
+        receiver: 'warning-alerts'
+        group_wait: 30s
+        repeat_interval: 2h
+
+    receivers:
+    - name: 'web.hook'
+      webhook_configs:
+      - url: 'http://notification-service:8080/webhook'
+        send_resolved: true
+
+    - name: 'critical-alerts'
+      email_configs:
+      - to: 'oncall@company.com'
+        subject: '[CRITICAL] Knowledge Base Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+      slack_configs:
+      - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+        channel: '#alerts-critical'
+        title: 'Critical Knowledge Base Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+    - name: 'warning-alerts'
+      email_configs:
+      - to: 'devops@company.com'
+        subject: '[WARNING] Knowledge Base Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+---
+# Jaeger Tracing
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: knowledge-base-jaeger
+  namespace: knowledge-base
+  labels:
+    app: jaeger
+    component: tracing
+spec:
+  strategy: production
+  storage:
+    type: memory
+    memory:
+      maxTraces: 50000
+  ingress:
+    enabled: true
+    hosts:
+      - jaeger.knowledge-base.company.com
+    tls:
+      enabled: true
+      secretName: jaeger-tls
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+---
+# Service Monitors
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: knowledge-api-monitor
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    team: platform
+spec:
+  selector:
+    matchLabels:
+      app: knowledge-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: chat-api-monitor
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    team: platform
+spec:
+  selector:
+    matchLabels:
+      app: chat-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reminders-api-monitor
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    team: platform
+spec:
+  selector:
+    matchLabels:
+      app: reminders-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-monitor
+  namespace: knowledge-base
+  labels:
+    app: redis
+    team: platform
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# Prometheus Rules
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: knowledge-base-rules
+  namespace: knowledge-base
+  labels:
+    team: platform
+spec:
+  groups:
+  - name: knowledge-base.rules
+    rules:
+    - alert: HighErrorRate
+      expr: sum(rate(http_requests_total{service=~"knowledge-api|chat-api|reminders-api",status=~"5.."}[5m])) by (service) / sum(rate(http_requests_total{service=~"knowledge-api|chat-api|reminders-api"}[5m])) by (service) > 0.05
+      for: 5m
+      labels:
+        severity: critical
+        service: "{{ $labels.service }}"
+      annotations:
+        summary: "High error rate on {{ $labels.service }}"
+        description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.service }}"
+
+    - alert: HighResponseTime
+      expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service=~"knowledge-api|chat-api|reminders-api"}[5m])) by (le, service)) > 2
+      for: 5m
+      labels:
+        severity: warning
+        service: "{{ $labels.service }}"
+      annotations:
+        summary: "High response time on {{ $labels.service }}"
+        description: "95th percentile response time is {{ $value }}s on {{ $labels.service }}"
+
+    - alert: HighMemoryUsage
+      expr: (container_memory_usage_bytes{namespace="knowledge-base"} / container_spec_memory_limit_bytes) > 0.85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High memory usage detected"
+        description: "Memory usage is {{ $value | humanizePercentage }} for {{ $labels.pod }}"
+
+    - alert: HighCPUUsage
+      expr: rate(container_cpu_usage_seconds_total{namespace="knowledge-base"}[5m]) > 0.8
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High CPU usage detected"
+        description: "CPU usage is {{ $value | humanizePercentage }} for {{ $labels.pod }}"
+
+    - alert: DatabaseConnectionFailure
+      expr: up{job="sqlite"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Database connection failure"
+        description: "Cannot connect to the database"
+
+    - alert: RedisDown
+      expr: up{job="redis"} == 0
+      for: 1m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Redis is down"
+        description: "Redis instance is not responding"
+
+    - alert: PodCrashLooping
+      expr: rate(kube_pod_container_status_restarts_total{namespace="knowledge-base"}[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod is crash looping"
+        description: "Pod {{ $labels.pod }} is restarting frequently"
+
+    - alert: KnowledgeBaseSearchLatency
+      expr: histogram_quantile(0.95, rate(knowledge_base_search_duration_seconds_bucket[5m])) > 5
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High search latency"
+        description: "95th percentile search latency is {{ $value }}s"
+
+    - alert: KnowledgeBaseSearchErrorRate
+      expr: rate(knowledge_base_search_requests_total{status="error"}[5m]) / rate(knowledge_base_search_requests_total[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "High search error rate"
+        description: "Search error rate is {{ $value | humanizePercentage }}"
+
+---
+# Loki Log Aggregation (Optional)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: knowledge-base
+  labels:
+    app: loki
+    component: logging
+data:
+  loki.yaml: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+
+    ingester:
+      lifecycler:
+        address: 127.0.0.1
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+        final_sleep: 0s
+      chunk_idle_period: 1h
+      max_chunk_age: 1h
+      chunk_target_size: 1048576
+      chunk_retain_period: 30s
+
+    schema_config:
+      configs:
+        - from: 2020-10-24
+          store: boltdb-shipper
+          object_store: filesystem
+          schema: v11
+          index:
+            prefix: index_
+            period: 24h
+
+    storage_config:
+      boltdb_shipper:
+        active_index_directory: /loki/boltdb-shipper-active
+        cache_location: /loki/boltdb-shipper-cache
+        shared_store: filesystem
+      filesystem:
+        directory: /loki/chunks
+
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+
+    chunk_store_config:
+      max_look_back_period: 0s
+
+    table_manager:
+      retention_deletes_enabled: false
+      retention_period: 0s

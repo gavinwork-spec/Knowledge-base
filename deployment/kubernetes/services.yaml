@@ -1,0 +1,407 @@
+# Kubernetes Services for Manufacturing Knowledge Base
+# Service discovery and load balancing
+
+---
+# Knowledge API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: knowledge-api-service
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9001"
+    prometheus.io/path: "/metrics"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  - name: metrics
+    port: 9001
+    targetPort: 9001
+    protocol: TCP
+  - name: websocket
+    port: 8765
+    targetPort: 8765
+    protocol: TCP
+  selector:
+    app: knowledge-api
+
+---
+# Chat API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-api-service
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9002"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8002
+    targetPort: 8002
+    protocol: TCP
+  - name: metrics
+    port: 9002
+    targetPort: 9002
+    protocol: TCP
+  selector:
+    app: chat-api
+
+---
+# Reminders API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: reminders-api-service
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    component: backend
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9000"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9000
+    targetPort: 9000
+    protocol: TCP
+  selector:
+    app: reminders-api
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: knowledge-base
+  labels:
+    app: frontend
+    component: ui
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: frontend
+
+---
+# Redis Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: knowledge-base
+  labels:
+    app: redis
+    component: cache
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+    protocol: TCP
+  selector:
+    app: redis
+
+---
+# Headless Service for StatefulSet (if needed)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  namespace: knowledge-base
+  labels:
+    app: redis
+    component: cache
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: 6379
+    protocol: TCP
+  selector:
+    app: redis
+
+---
+# External Services for Monitoring Stack
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-service
+  namespace: knowledge-base
+  labels:
+    app: prometheus
+    component: monitoring
+  annotations:
+    prometheus.io/scrape: "false"
+spec:
+  type: ClusterIP
+  ports:
+  - name: web
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+  selector:
+    app: prometheus
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-service
+  namespace: knowledge-base
+  labels:
+    app: grafana
+    component: monitoring
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: LoadBalancer
+  ports:
+  - name: web
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: grafana
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-service
+  namespace: knowledge-base
+  labels:
+    app: jaeger
+    component: monitoring
+spec:
+  type: ClusterIP
+  ports:
+  - name: ui
+    port: 16686
+    targetPort: 16686
+    protocol: TCP
+  - name: collector
+    port: 14268
+    targetPort: 14268
+    protocol: TCP
+  selector:
+    app: jaeger
+
+---
+# Service Monitors for Prometheus Operator (if using)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: knowledge-api-metrics
+  namespace: knowledge-base
+  labels:
+    app: knowledge-api
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: knowledge-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: chat-api-metrics
+  namespace: knowledge-base
+  labels:
+    app: chat-api
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: chat-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reminders-api-metrics
+  namespace: knowledge-base
+  labels:
+    app: reminders-api
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: reminders-api
+  endpoints:
+  - port: metrics
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-metrics
+  namespace: knowledge-base
+  labels:
+    app: redis
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+  - port: redis
+    path: /metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+# Endpoints for External Services (if connecting to external databases)
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: external-postgres
+  namespace: knowledge-base
+  labels:
+    app: postgres
+    component: external-database
+subsets:
+- addresses:
+  - ip: 10.0.1.100  # Replace with actual PostgreSQL IP
+  ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: external-postgres-service
+  namespace: knowledge-base
+  labels:
+    app: postgres
+    component: external-database
+spec:
+  type: ClusterIP
+  ports:
+  - name: postgres
+    port: 5432
+    targetPort: 5432
+    protocol: TCP
+
+---
+# Network Policies for Service Communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: knowledge-api-netpol
+  namespace: knowledge-base
+spec:
+  podSelector:
+    matchLabels:
+      app: knowledge-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: frontend
+    - podSelector:
+        matchLabels:
+          app: chat-api
+    - podSelector:
+        matchLabels:
+          app: reminders-api
+    ports:
+    - protocol: TCP
+      port: 8001
+  egress:
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    ports:
+    - protocol: TCP
+      port: 6379
+  - to:
+    - podSelector:
+        matchLabels:
+          app: postgres
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis-netpol
+  namespace: knowledge-base
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: knowledge-api
+    - podSelector:
+        matchLabels:
+          app: chat-api
+    - podSelector:
+        matchLabels:
+          app: reminders-api
+    ports:
+    - protocol: TCP
+      port: 6379

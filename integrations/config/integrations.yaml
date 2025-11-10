@@ -1,0 +1,381 @@
+# Manufacturing Knowledge Base - Integration Configuration
+# Complete configuration for open-source component integrations
+
+# Global Integration Settings
+global:
+  version: "1.0.0"
+  manufacturing_mode: true
+  debug_mode: false
+  log_level: "INFO"
+
+  # Manufacturing Domain Configuration
+  manufacturing:
+    domain:
+      industry: "manufacturing"
+      sub_industry: "precision_machining"
+      compliance_standards: ["ISO_9001", "AS9100", "IATF_16949", "OSHA"]
+      safety_regulations: ["ANSI_Z535", "OSHA_1910", "Machine_Safety_Directive"]
+      quality_standards: ["Six_Sigma", "Lean_Manufacturing", "Statistical_Process_Control"]
+
+    user_roles: ["operator", "engineer", "quality_inspector", "safety_officer", "maintenance_tech"]
+    equipment_types: ["cnc_milling", "cnc_turning", "grinding", "edm", "measurement"]
+    process_types: ["machining", "inspection", "assembly", "maintenance", "quality_control"]
+
+# LangChain Integration Configuration
+langchain:
+  enabled: true
+  priority: 1
+
+  # LLM Configuration
+  llm:
+    provider: "openai"
+    model: "gpt-4"
+    temperature: 0.1
+    max_tokens: 2000
+    top_p: 0.9
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+
+  # Embeddings Configuration
+  embeddings:
+    provider: "openai"
+    model: "text-embedding-ada-002"
+    batch_size: 100
+    max_retries: 3
+
+  # Vector Store Configuration
+  vectorstore:
+    provider: "chroma"
+    collection_name: "manufacturing_knowledge_base"
+    persist_directory: "./data/chroma_db"
+    similarity_threshold: 0.7
+    max_results: 10
+
+  # Memory Configuration
+  memory:
+    type: "manufacturing"  # Options: buffer, summary, manufacturing
+    max_tokens: 2000
+    conversation_window: 10
+
+  # Manufacturing-Specific Prompts
+  prompts:
+    system_prompt: |
+      You are a knowledgeable manufacturing assistant specializing in industrial processes,
+      safety procedures, quality control, and technical specifications. Your expertise includes:
+      - CNC machining and manufacturing processes
+      - Safety procedures and OSHA compliance
+      - Quality control and inspection methods
+      - Technical specifications and blueprints
+      - Equipment maintenance and troubleshooting
+
+      Always prioritize safety and compliance in your responses. Provide specific, actionable
+      information relevant to manufacturing operations.
+
+    manufacturing_query: |
+      Manufacturing Context: {context}
+      Query: {query}
+
+      Provide a comprehensive response addressing the manufacturing query above.
+      Consider relevant safety procedures, quality standards, and best practices.
+      Include specific steps or procedures when applicable.
+
+    safety_procedure: |
+      Equipment Type: {equipment_type}
+      Operation: {operation}
+      Safety Query: {query}
+
+      Provide detailed safety procedures for the specified equipment and operation.
+      Include:
+      - Required PPE (Personal Protective Equipment)
+      - Lockout/Tagout procedures
+      - Machine safety requirements
+      - Emergency procedures
+      - Relevant OSHA and ANSI standards
+
+    quality_control: |
+      Product Specification: {product_spec}
+      Inspection Type: {inspection_type}
+      Quality Query: {query}
+
+      Provide quality control procedures and inspection methods.
+      Include:
+      - Inspection equipment and tools
+      - Acceptance criteria
+      - Statistical process control methods
+      - Documentation requirements
+      - Relevant quality standards
+
+# LobeChat Integration Configuration
+lobechat:
+  enabled: true
+  priority: 2
+
+  # Frontend Integration
+  frontend:
+    theme: "manufacturing"  # Options: default, manufacturing, safety, quality
+    language: "en"
+    custom_components: true
+    manufacturing_theme: true
+
+  # WebSocket Configuration
+  websocket:
+    url: "ws://localhost:8765"
+    reconnect_attempts: 5
+    reconnect_delay: 1000  # ms
+    heartbeat_interval: 30  # seconds
+
+  # Chat Interface Features
+  features:
+    file_upload: true
+    image_recognition: true
+    voice_input: false
+    message_history: true
+    suggested_responses: true
+    manufacturing_templates: true
+
+  # UI Customization
+  ui:
+    primary_color: "#2563eb"
+    secondary_color: "#64748b"
+    accent_color: "#dc2626"  # Safety red
+    font_size: "medium"
+    compact_mode: false
+
+  # Manufacturing-Specific Features
+  manufacturing:
+    quick_actions:
+      - "Safety Check"
+      - "Quality Inspection"
+      - "Maintenance Request"
+      - "Technical Manual"
+      - "Procedure Lookup"
+
+    templates:
+      safety_check:
+        title: "Safety Check"
+        placeholder: "Describe the safety concern or equipment for safety procedures..."
+
+      quality_inspection:
+        title: "Quality Inspection"
+        placeholder: "Enter part number, specification, or inspection requirements..."
+
+      maintenance_request:
+        title: "Maintenance Request"
+        placeholder: "Describe the maintenance issue or equipment needing service..."
+
+# XAgent Integration Configuration
+xagent:
+  enabled: true
+  priority: 3
+
+  # Orchestrator Configuration
+  orchestrator:
+    max_concurrent_agents: 10
+    task_timeout: 300  # seconds
+    communication_protocol: "redis"
+    coordination_strategy: "hierarchical"
+
+  # Agent Configuration
+  agents:
+    # Manufacturing Knowledge Agent
+    knowledge_agent:
+      name: "ManufacturingKnowledgeAgent"
+      capabilities: ["document_processing", "query_answering", "technical_expertise"]
+      tools: ["search", "retrieval", "analysis"]
+      priority: 1
+      max_concurrent_tasks: 5
+
+    # Safety Procedures Agent
+    safety_agent:
+      name: "SafetyProceduresAgent"
+      capabilities: ["safety_analysis", "procedure_generation", "compliance_checking"]
+      tools: ["safety_database", "compliance_checker", "procedure_generator"]
+      priority: 1
+      max_concurrent_tasks: 3
+
+    # Quality Control Agent
+    quality_agent:
+      name: "QualityControlAgent"
+      capabilities: ["quality_analysis", "inspection_planning", "statistical_analysis"]
+      tools: ["spc_tools", "quality_database", "measurement_analyzer"]
+      priority: 1
+      max_concurrent_tasks: 4
+
+    # Technical Expert Agent
+    technical_agent:
+      name: "TechnicalExpertAgent"
+      capabilities: ["technical_analysis", "specification_interpretation", "troubleshooting"]
+      tools: ["technical_database", "blueprint_analyzer", "manual_retriever"]
+      priority: 2
+      max_concurrent_tasks: 3
+
+    # Equipment Maintenance Agent
+    maintenance_agent:
+      name: "EquipmentMaintenanceAgent"
+      capabilities: ["maintenance_planning", "troubleshooting", "parts_inventory"]
+      tools: ["maintenance_database", "parts_inventory", "diagnostic_tools"]
+      priority: 2
+      max_concurrent_tasks: 2
+
+  # Task Decomposition
+  task_decomposition:
+    max_subtasks: 10
+    complexity_threshold: 0.7
+    parallel_execution: true
+    dependency_resolution: true
+
+  # Communication Protocols
+  communication:
+    message_timeout: 30  # seconds
+    retry_attempts: 3
+    compression_enabled: true
+    encryption_enabled: true
+
+# LangFuse Integration Configuration
+langfuse:
+  enabled: true
+  priority: 4
+
+  # LangFuse Connection
+  connection:
+    public_key: "${LANGFUSE_PUBLIC_KEY}"
+    secret_key: "${LANGFUSE_SECRET_KEY}"
+    host: "https://cloud.langfuse.com"  # or self-hosted URL
+    environment: "production"
+
+  # Tracing Configuration
+  tracing:
+    sample_rate: 1.0  # 100% sampling for manufacturing
+    batch_size: 100
+    flush_interval: 60  # seconds
+    timeout: 30  # seconds
+
+  # Cost Tracking
+  cost_tracking:
+    enabled: true
+    budget_alerts: true
+    monthly_budget: 1000  # USD
+    cost_per_token_alert: 0.00001
+
+  # Manufacturing-Specific Metrics
+  manufacturing_metrics:
+    query_types: ["safety_procedure", "quality_control", "technical_spec", "general_manufacturing"]
+    user_roles: ["operator", "engineer", "quality_inspector", "safety_officer"]
+    equipment_types: ["cnc_milling", "cnc_turning", "grinding", "measurement"]
+    process_types: ["machining", "inspection", "maintenance", "quality_check"]
+
+  # Performance Metrics
+  performance_metrics:
+    response_time_threshold: 2.0  # seconds
+    accuracy_threshold: 0.95
+    user_satisfaction_threshold: 4.5  # out of 5
+
+  # Alerting
+  alerting:
+    error_rate_threshold: 0.05  # 5%
+    response_time_threshold: 5.0  # seconds
+    cost_threshold: 0.01  # USD per request
+    notification_channels: ["email", "slack"]
+
+# Shared Configuration
+shared:
+  # Database Configuration
+  database:
+    type: "sqlite"  # Options: sqlite, postgresql
+    connection_string: "sqlite:///knowledge_base.db"
+    connection_pool_size: 10
+    query_timeout: 30  # seconds
+
+  # Redis Configuration
+  redis:
+    host: "localhost"
+    port: 6379
+    password: "${REDIS_PASSWORD}"
+    database: 0
+    connection_pool_size: 20
+
+  # Logging Configuration
+  logging:
+    level: "INFO"
+    format: "json"
+    file_path: "./logs/integrations.log"
+    max_file_size: "100MB"
+    backup_count: 5
+
+  # Security Configuration
+  security:
+    encryption_key: "${ENCRYPTION_KEY}"
+    jwt_secret: "${JWT_SECRET}"
+    api_rate_limit: 1000  # requests per minute
+    session_timeout: 3600  # seconds
+
+  # Monitoring Configuration
+  monitoring:
+    metrics_enabled: true
+    health_check_interval: 30  # seconds
+    performance_tracking: true
+    error_tracking: true
+
+  # Caching Configuration
+  caching:
+    enabled: true
+    cache_type: "redis"  # Options: memory, redis
+    default_ttl: 3600  # seconds
+    max_cache_size: 1000  # MB
+
+# Development Configuration (override for development environment)
+development:
+  debug_mode: true
+  log_level: "DEBUG"
+
+  # Mock Services
+  mock_external_apis: true
+  mock_llm_responses: true
+
+  # Testing
+  test_data_path: "./tests/fixtures"
+  integration_tests_enabled: true
+  performance_tests_enabled: false
+
+# Production Configuration (override for production environment)
+production:
+  debug_mode: false
+  log_level: "INFO"
+
+  # Performance
+  max_concurrent_requests: 100
+  request_timeout: 30  # seconds
+
+  # Security
+  require_auth: true
+  rate_limiting: true
+  audit_logging: true
+
+  # Reliability
+  health_checks: true
+  circuit_breaker: true
+  retry_policy: "exponential_backoff"
+
+# Compliance Configuration
+compliance:
+  # GDPR Compliance
+  gdpr:
+    data_minimization: true
+    consent_management: true
+    right_to_erasure: true
+    data_portability: true
+    audit_logging: true
+
+  # Industry Compliance
+  manufacturing_standards:
+    iso_9001: true
+    as9100: false  # Aerospace specific
+    iatf_16949: false  # Automotive specific
+    osha_compliance: true
+
+  # Data Retention
+  data_retention:
+    user_data_days: 365
+    query_logs_days: 90
+    audit_logs_days: 2555  # 7 years
+    performance_metrics_days: 180
