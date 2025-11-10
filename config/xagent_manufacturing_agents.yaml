@@ -1,0 +1,434 @@
+# XAgent Manufacturing Agents Configuration
+# 基于XAgent的制造业智能体配置
+
+# Orchestrator Configuration
+orchestrator:
+  name: "Manufacturing XAgent Orchestrator"
+  version: "2.0.0"
+  description: "Advanced multi-agent system for manufacturing knowledge management"
+
+  # Performance Settings
+  max_concurrent_tasks: 10
+  task_timeout: 3600  # 1 hour
+  retry_attempts: 3
+
+  # Observability
+  langfuse_enabled: true
+  metrics_collection: true
+  logging_level: "INFO"
+
+  # Communication
+  message_bus_type: "redis"  # redis, memory, rabbitmq
+  communication_timeout: 30
+
+# Manufacturing Agent Definitions
+agents:
+  # Safety Inspector Agent
+  safety_inspector:
+    class: "ManufacturingSafetyInspector"
+    name: "Manufacturing Safety Inspector"
+    role: "safety_inspector"
+    description: "Specialized agent for safety inspection and compliance monitoring"
+
+    # Capabilities
+    capabilities:
+      - "safety_check"
+      - "compliance_checking"
+      - "anomaly_detection"
+      - "real_time_monitoring"
+
+    # Configuration
+    config:
+      safety_standards: ["OSHA_1910", "ANSI_Z87.1", "ISO_45001"]
+      inspection_frequency: "daily"
+      emergency_response: true
+      risk_assessment: true
+
+    # Skills Proficiency
+    skills:
+      equipment_safety:
+        proficiency: 0.9
+        experience: 150
+      procedural_compliance:
+        proficiency: 0.85
+        experience: 120
+      hazard_identification:
+        proficiency: 0.95
+        experience: 200
+
+    # Triggers
+    triggers:
+      - type: "schedule"
+        cron: "0 8,12,16 * * 1-5"  # 8 AM, 12 PM, 4 PM weekdays
+        timezone: "Asia/Shanghai"
+
+      - type: "event"
+        event_type: "equipment_start"
+        priority: "high"
+
+      - type: "event"
+        event_type: "safety_incident"
+        priority: "critical"
+
+      - type: "event"
+        event_type: "quality_failure"
+        priority: "high"
+
+  # Quality Controller Agent
+  quality_controller:
+    class: "QualityController"
+    name: "Quality Controller"
+    role: "quality_controller"
+    description: "Specialized agent for quality control, inspection, and process optimization"
+
+    # Capabilities
+    capabilities:
+      - "quality_inspection"
+      - "data_analysis"
+      - "anomaly_detection"
+      - "compliance_checking"
+
+    # Configuration
+    config:
+      quality_standards: ["ISO_9001", "AS9100", "IATF_16949"]
+      inspection_methods: ["statistical_process_control", "first_article_inspection", "in_process_inspection"]
+      tolerance_analysis: true
+      trend_monitoring: true
+
+    # Skills Proficiency
+    skills:
+      dimensional_inspection:
+        proficiency: 0.88
+        experience: 180
+      statistical_analysis:
+        proficiency: 0.92
+        experience: 160
+      compliance_auditing:
+        proficiency: 0.85
+        experience: 140
+
+    # Triggers
+    triggers:
+      - type: "schedule"
+        cron: "0 */2 * * 1-5"  # Every 2 hours weekdays
+        timezone: "Asia/Shanghai"
+
+      - type: "event"
+        event_type: "production_batch_complete"
+        priority: "normal"
+
+      - type: "event"
+        event_type: "quality_alert"
+        priority: "high"
+
+  # Maintenance Technician Agent
+  maintenance_technician:
+    class: "MaintenanceTechnician"
+    name: "Maintenance Technician"
+    role: "maintenance_technician"
+    description: "Specialized agent for equipment maintenance and reliability management"
+
+    # Capabilities
+    capabilities:
+      - "predictive_maintenance"
+      - "data_analysis"
+      - "real_time_monitoring"
+      - "workflow_orchestration"
+
+    # Configuration
+    config:
+      maintenance_strategy: "predictive"
+      equipment_monitoring: true
+      failure_prediction: true
+      scheduling_algorithm: "priority_based"
+
+    # Skills Proficiency
+    skills:
+      equipment_diagnostics:
+        proficiency: 0.90
+        experience: 200
+      preventive_maintenance:
+        proficiency: 0.92
+        experience: 250
+      troubleshooting:
+        proficiency: 0.88
+        experience: 180
+
+    # Triggers
+    triggers:
+      - type: "schedule"
+        cron: "0 6,18 * * *"  # 6 AM and 6 PM daily
+        timezone: "Asia/Shanghai"
+
+      - type: "event"
+        event_type: "equipment_anomaly"
+        priority: "high"
+
+      - type: "event"
+        event_type: "maintenance_request"
+        priority: "normal"
+
+  # Production Manager Agent
+  production_manager:
+    class: "ProductionManager"
+    name: "Production Manager"
+    role: "production_manager"
+    description: "Specialized agent for production planning, scheduling, and optimization"
+
+    # Capabilities
+    capabilities:
+      - "process_optimization"
+      - "data_analysis"
+      - "workflow_orchestration"
+      - "real_time_monitoring"
+
+    # Configuration
+    config:
+      optimization_objectives: ["throughput", "quality", "efficiency"]
+      scheduling_algorithm: "just_in_time"
+      capacity_planning: true
+      demand_forecasting: true
+
+    # Skills Proficiency
+    skills:
+      production_scheduling:
+        proficiency: 0.87
+        experience: 220
+      capacity_planning:
+        proficiency: 0.85
+        experience: 190
+      process_optimization:
+        proficiency: 0.90
+        experience: 210
+
+    # Triggers
+    triggers:
+      - type: "schedule"
+        cron: "0 7 * * 1-5"  # 7 AM weekdays
+        timezone: "Asia/Shanghai"
+
+      - type: "event"
+        event_type: "production_order"
+        priority: "normal"
+
+      - type: "event"
+        event_type: "capacity_constraint"
+        priority: "high"
+
+# Task Templates
+task_templates:
+  # Safety Inspection Task
+  safety_inspection:
+    name: "Safety Inspection Task"
+    description: "Perform comprehensive safety inspection"
+    priority: "high"
+    required_capabilities: ["safety_check", "compliance_checking"]
+    estimated_duration: "30m"
+    max_duration: "2h"
+
+    input_schema:
+      inspection_type:
+        type: "string"
+        enum: ["equipment", "facility", "procedural", "environmental"]
+        required: true
+      equipment_id:
+        type: "string"
+        required: false
+
+    output_schema:
+      inspection_results:
+        type: "array"
+        compliance_status:
+          type: "string"
+        recommendations:
+          type: "array"
+
+  # Quality Control Task
+  quality_inspection:
+    name: "Quality Control Task"
+    description: "Perform quality control inspection and analysis"
+    priority: "normal"
+    required_capabilities: ["quality_inspection", "data_analysis"]
+    estimated_duration: "45m"
+    max_duration: "3h"
+
+    input_schema:
+      inspection_type:
+        type: "string"
+        enum: ["first_article", "in_process", "final", "sampling"]
+        required: true
+      measurements:
+        type: "array"
+        required: false
+
+    output_schema:
+      inspection_results:
+        type: "array"
+      quality_metrics:
+        type: "object"
+      compliance_status:
+        type: "string"
+
+  # Maintenance Task
+  maintenance_task:
+    name: "Maintenance Task"
+    description: "Perform equipment maintenance and diagnostics"
+    priority: "normal"
+    required_capabilities: ["predictive_maintenance", "data_analysis"]
+    estimated_duration: "60m"
+    max_duration: "4h"
+
+    input_schema:
+      maintenance_type:
+        type: "string"
+        enum: ["preventive", "corrective", "predictive", "emergency"]
+        required: true
+      equipment_id:
+        type: "string"
+        required: true
+
+    output_schema:
+      maintenance_report:
+        type: "object"
+      recommendations:
+        type: "array"
+      next_scheduled_maintenance:
+        type: "string"
+
+# Collaboration Matrix
+collaboration_matrix:
+  safety_inspector:
+    - quality_controller: 0.8
+    - production_manager: 0.9
+    - maintenance_technician: 0.7
+
+  quality_controller:
+    - safety_inspector: 0.8
+    - production_manager: 0.85
+    - maintenance_technician: 0.6
+
+  maintenance_technician:
+    - production_manager: 0.8
+    - safety_inspector: 0.7
+    - quality_controller: 0.6
+
+  production_manager:
+    - safety_inspector: 0.9
+    - quality_controller: 0.85
+    - maintenance_technician: 0.8
+
+# Workflow Definitions
+workflows:
+  # Production Quality Workflow
+  production_quality_workflow:
+    name: "Production Quality Assurance"
+    description: "End-to-end quality assurance for production"
+    steps:
+      - task: "safety_inspection"
+        priority: "critical"
+        dependencies: []
+
+      - task: "quality_inspection"
+        priority: "high"
+        dependencies: ["safety_inspection"]
+
+      - task: "maintenance_check"
+        priority: "normal"
+        dependencies: ["quality_inspection"]
+
+      - task: "production_optimization"
+        priority: "low"
+        dependencies: ["maintenance_check"]
+
+    success_criteria:
+      - all_checks_passed: true
+      - quality_score: "> 0.95"
+      - no_critical_issues: true
+
+  # Equipment Maintenance Workflow
+  equipment_maintenance_workflow:
+    name: "Equipment Maintenance Process"
+    description: "Comprehensive equipment maintenance workflow"
+    steps:
+      - task: "equipment_diagnostics"
+        priority: "high"
+        dependencies: []
+
+      - task: "preventive_maintenance"
+        priority: "normal"
+        dependencies: ["equipment_diagnostics"]
+
+      - task: "quality_verification"
+        priority: "high"
+        dependencies: ["preventive_maintenance"]
+
+      - task: "documentation_update"
+        priority: "low"
+        dependencies: ["quality_verification"]
+
+# Performance Metrics
+performance_metrics:
+  agent_metrics:
+    task_completion_rate:
+      target: 0.95
+      alert_threshold: 0.80
+
+    average_response_time:
+      target: 300  # seconds
+      alert_threshold: 600
+
+    success_rate:
+      target: 0.98
+      alert_threshold: 0.90
+
+  system_metrics:
+    task_throughput:
+      target: 100  # tasks per hour
+      alert_threshold: 80
+
+    agent_utilization:
+      target: 0.75
+      alert_threshold: 0.90
+
+    communication_latency:
+      target: 100  # milliseconds
+      alert_threshold: 500
+
+# Alert Configuration
+alerts:
+  critical:
+    - "system_failure"
+    - "safety_incident"
+    - "quality_crisis"
+
+  high:
+    - "agent_failure"
+    - "task_timeout"
+    - "performance_degradation"
+
+  normal:
+    - "skill_improvement"
+    - "workflow_optimization"
+    - "knowledge_update"
+
+# Integration Settings
+integrations:
+  langfuse:
+    enabled: true
+    api_key: "${LANGFUSE_SECRET_KEY}"
+    public_key: "${LANGFUSE_PUBLIC_KEY}"
+    host: "${LANGFUSE_HOST}"
+
+  redis:
+    host: "localhost"
+    port: 6379
+    db: 0
+
+  apis:
+    knowledge_base:
+      base_url: "http://localhost:8001"
+      timeout: 30
+
+    chat_interface:
+      base_url: "http://localhost:8002"
+      timeout: 30

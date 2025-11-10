@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+
+    /* Manufacturing-specific variables */
+    --safety-critical: 0 84.2% 60.2%;
+    --quality-excellent: 142.1 76.2% 36.3%;
+    --equipment-operational: 142.1 76.2% 36.3%;
+    --equipment-maintenance: 27.1 92.6% 39.4%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    margin: 0;
+    min-height: 100vh;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* Manufacturing-specific components */
+  .manufacturing-card {
+    @apply bg-card border rounded-lg shadow-manufacturing p-6 transition-all duration-200 hover:shadow-lg;
+  }
+
+  .safety-alert {
+    @apply border-l-4 border-safety-red bg-red-50 dark:bg-red-950/20 p-4 rounded-r-lg;
+  }
+
+  .quality-indicator {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .quality-excellent {
+    @apply quality-indicator bg-quality-excellent/10 text-quality-excellent dark:bg-quality-excellent/20;
+  }
+
+  .quality-good {
+    @apply quality-indicator bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+  }
+
+  .equipment-status {
+    @apply inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .status-operational {
+    @apply equipment-status bg-status-operational/10 text-status-operational dark:bg-status-operational/20;
+  }
+
+  .status-maintenance {
+    @apply equipment-status bg-status-maintenance/10 text-status-maintenance dark:bg-status-maintenance/20;
+  }
+
+  .search-result-card {
+    @apply manufacturing-card cursor-pointer hover:scale-[1.02] transition-transform;
+  }
+
+  .expertise-badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-semibold;
+  }
+
+  .expertise-beginner {
+    @apply expertise-badge bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+  }
+
+  .expertise-intermediate {
+    @apply expertise-badge bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400;
+  }
+
+  .expertise-advanced {
+    @apply expertise-badge bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400;
+  }
+
+  .expertise-expert {
+    @apply expertise-badge bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400;
+  }
+
+  /* Chat interface components */
+  .chat-message {
+    @apply p-4 rounded-lg max-w-[80%] break-words;
+  }
+
+  .chat-message-user {
+    @apply chat-message bg-primary text-primary-foreground ml-auto;
+  }
+
+  .chat-message-assistant {
+    @apply chat-message bg-secondary text-secondary-foreground;
+  }
+
+  .quick-action-btn {
+    @apply px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium;
+  }
+
+  /* Manufacturing theme components */
+  .manufacturing-header {
+    @apply bg-gradient-to-r from-primary-600 to-primary-800 text-white shadow-lg;
+  }
+
+  .manufacturing-sidebar {
+    @apply bg-card border-r border-border w-64 min-h-screen;
+  }
+
+  .manufacturing-content {
+    @apply flex-1 p-6 bg-background;
+  }
+
+  /* Loading and animations */
+  .loading-spinner {
+    @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  /* Manufacturing utilities */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+
+  .glass {
+    @apply glass-morphism;
+  }
+
+  .gradient-border {
+    @apply manufacturing-border;
+  }
+}
+
+/* Custom scrollbar for manufacturing theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  @apply outline-2 outline-offset-2 outline-ring;
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .manufacturing-card {
+    @apply shadow-none border border-gray-300;
+  }
+}
