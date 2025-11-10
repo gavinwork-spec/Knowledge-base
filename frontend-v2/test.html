@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAgent System Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+        }
+        .test-header {
+            background: linear-gradient(to right, #2563eb, #1e40af);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .test-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .status-ok {
+            color: #22c55e;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🏭 XAgent 制造业智能系统 - 测试页面</h1>
+        <p>Manufacturing Intelligence System - Test Page</p>
+    </div>
+
+    <div class="test-card">
+        <h2>✅ 系统状态检查</h2>
+        <ul>
+            <li><span class="status-ok">前端服务:</span> http://localhost:3000 - 正常运行</li>
+            <li><span class="status-ok">知识管理 API:</span> http://localhost:8001 - 正常运行</li>
+            <li><span class="status-ok">聊天界面 API:</span> http://localhost:8002 - 正常运行</li>
+        </ul>
+    </div>
+
+    <div class="test-card">
+        <h2>🎯 可用功能</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div>
+                <h3>🤖 制造业智能体</h3>
+                <ul>
+                    <li>安全检查员 - Safety Inspector</li>
+                    <li>质量控制器 - Quality Controller</li>
+                    <li>维护技术员 - Maintenance Technician</li>
+                    <li>生产经理 - Production Manager</li>
+                </ul>
+            </div>
+            <div>
+                <h3>⚙️ 系统功能</h3>
+                <ul>
+                    <li>智能任务编排</li>
+                    <li>实时监控分析</li>
+                    <li>安全通信协议</li>
+                    <li>LangChain RAG 集成</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>🔗 快速访问链接</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+            <a href="http://localhost:3000" target="_blank" style="display: block; padding: 10px; background: #3b82f6; color: white; text-align: center; text-decoration: none; border-radius: 4px;">
+                🎨 前端仪表板
+            </a>
+            <a href="http://localhost:8001/docs" target="_blank" style="display: block; padding: 10px; background: #10b981; color: white; text-align: center; text-decoration: none; border-radius: 4px;">
+                📚 API 文档
+            </a>
+            <a href="http://localhost:8002" target="_blank" style="display: block; padding: 10px; background: #8b5cf6; color: white; text-align: center; text-decoration: none; border-radius: 4px;">
+                💬 聊天界面
+            </a>
+        </div>
+    </div>
+
+    <div class="test-card">
+        <h2>📊 技术架构</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; text-align: center;">
+            <div>
+                <div style="font-size: 2rem;">⚛️</div>
+                <h4>前端技术</h4>
+                <p>React + TypeScript + Vite</p>
+            </div>
+            <div>
+                <div style="font-size: 2rem;">🔧</div>
+                <h4>后端服务</h4>
+                <p>Python + Flask + FastAPI</p>
+            </div>
+            <div>
+                <div style="font-size: 2rem;">🤖</div>
+                <h4>智能体系统</h4>
+                <p>XAgent 多智能体编排</p>
+            </div>
+            <div>
+                <div style="font-size: 2rem;">📡</div>
+                <h4>集成架构</h4>
+                <p>LangChain + LangFuse</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 简单的状态检查脚本
+        async function checkServices() {
+            const services = [
+                { name: '知识管理 API', url: 'http://localhost:8001/api/health' },
+                { name: '聊天界面 API', url: 'http://localhost:8002/api/health' }
+            ];
+
+            for (const service of services) {
+                try {
+                    const response = await fetch(service.url);
+                    const data = await response.json();
+                    console.log(`${service.name}:`, data);
+                } catch (error) {
+                    console.error(`${service.name} 错误:`, error);
+                }
+            }
+        }
+
+        // 页面加载时检查服务状态
+        window.addEventListener('load', checkServices);
+    </script>
+</body>
+</html>

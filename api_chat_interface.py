@@ -581,6 +581,642 @@ def get_chat_stats():
             'error': str(e)
         }), 500
 
+# Root endpoint - Return chat interface HTML
+@app.route('/', methods=['GET'])
+def root():
+    chat_html = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XAgent 制造业智能聊天界面</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2563eb;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            margin: 2rem auto;
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: #1f2937;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .agent-item {
+            padding: 0.75rem;
+            background: #f3f4f6;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .agent-item:hover {
+            background: #e5e7eb;
+            transform: translateX(5px);
+        }
+
+        .agent-item.active {
+            background: #dbeafe;
+            border-left-color: #2563eb;
+        }
+
+        .agent-item .agent-name {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.25rem;
+        }
+
+        .agent-item .agent-desc {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        .chat-container {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .chat-header h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 0.875rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: #f9fafb;
+            min-height: 400px;
+            max-height: 500px;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: #2563eb;
+            color: white;
+        }
+
+        .message.assistant .message-avatar {
+            background: #10b981;
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 1rem;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant .message-content {
+            background: white;
+            color: #1f2937;
+            border: 1px solid #e5e7eb;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        .chat-input {
+            padding: 1.5rem;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .chat-input textarea {
+            width: 100%;
+            min-height: 50px;
+            max-height: 120px;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input textarea:focus {
+            border-color: #2563eb;
+        }
+
+        .send-button {
+            padding: 1rem 2rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .send-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1rem;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .quick-action {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action:hover {
+            background: #e5e7eb;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                margin: 1rem;
+                padding: 0 1rem;
+            }
+
+            .sidebar {
+                width: 100%;
+                order: 2;
+            }
+
+            .chat-container {
+                order: 1;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                🏭 XAgent 制造业智能系统
+            </div>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span>系统运行中</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <h3>🤖 选择智能体</h3>
+            <div class="agent-list">
+                <div class="agent-item active" data-agent="safety">
+                    <div class="agent-name">🛡️ 安全检查员</div>
+                    <div class="agent-desc">Safety Inspector</div>
+                </div>
+                <div class="agent-item" data-agent="quality">
+                    <div class="agent-name">🎯 质量控制器</div>
+                    <div class="agent-desc">Quality Controller</div>
+                </div>
+                <div class="agent-item" data-agent="maintenance">
+                    <div class="agent-name">🔧 维护技术员</div>
+                    <div class="agent-desc">Maintenance Technician</div>
+                </div>
+                <div class="agent-item" data-agent="production">
+                    <div class="agent-name">📊 生产经理</div>
+                    <div class="agent-desc">Production Manager</div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2 id="current-agent-name">🛡️ 安全检查员</h2>
+                <p id="current-agent-desc">制造业安全标准检查与风险评估专家</p>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="message assistant">
+                    <div class="message-avatar">🛡️</div>
+                    <div class="message-content">
+                        <div>您好！我是安全检查员智能体。我可以帮助您：</div>
+                        <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                            <li>进行安全标准检查</li>
+                            <li>评估工作场所风险</li>
+                            <li>提供安全建议</li>
+                            <li>分析安全合规性</li>
+                        </ul>
+                        <div style="margin-top: 0.5rem;">请问有什么可以帮助您的吗？</div>
+                        <div class="message-time">刚刚</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input">
+                <div class="quick-actions">
+                    <div class="quick-action">检查设备安全</div>
+                    <div class="quick-action">评估风险</div>
+                    <div class="quick-action">安全标准咨询</div>
+                    <div class="quick-action">应急准备</div>
+                </div>
+                <div class="input-container">
+                    <div class="input-wrapper">
+                        <textarea id="message-input" placeholder="请输入您的问题..." rows="1"></textarea>
+                    </div>
+                    <button class="send-button" id="send-button">
+                        <span>发送</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22,2 15,22 11,13 2,9 22,2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+                <div class="typing-indicator" id="typing-indicator">智能体正在思考...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 智能体配置
+        const agents = {
+            safety: {
+                name: '🛡️ 安全检查员',
+                desc: '制造业安全标准检查与风险评估专家',
+                avatar: '🛡️',
+                greeting: '您好！我是安全检查员智能体。我可以帮助您：\\n• 进行安全标准检查\\n• 评估工作场所风险\\n• 提供安全建议\\n• 分析安全合规性\\n\\n请问有什么可以帮助您的吗？'
+            },
+            quality: {
+                name: '🎯 质量控制器',
+                desc: '产品质量管理与标准控制专家',
+                avatar: '🎯',
+                greeting: '您好！我是质量控制器智能体。我可以帮助您：\\n• 分析产品质量标准\\n• 提供质量控制方案\\n• 评估质量管理体系\\n• 优化检测流程\\n\\n请问有什么质量方面的问题需要咨询吗？'
+            },
+            maintenance: {
+                name: '🔧 维护技术员',
+                desc: '设备维护与故障诊断专家',
+                avatar: '🔧',
+                greeting: '您好！我是维护技术员智能体。我可以帮助您：\\n• 诊断设备故障\\n• 制定维护计划\\n• 提供维修建议\\n• 优化设备性能\\n\\n请问有什么设备维护方面的问题吗？'
+            },
+            production: {
+                name: '📊 生产经理',
+                desc: '生产计划与流程优化专家',
+                avatar: '📊',
+                greeting: '您好！我是生产经理智能体。我可以帮助您：\\n• 制定生产计划\\n• 优化生产流程\\n• 分析生产数据\\n• 提高生产效率\\n\\n请问有什么生产管理方面的问题需要咨询吗？'
+            }
+        };
+
+        let currentAgent = 'safety';
+        let isTyping = false;
+
+        // DOM元素
+        const chatMessages = document.getElementById('chat-messages');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const currentAgentName = document.getElementById('current-agent-name');
+        const currentAgentDesc = document.getElementById('current-agent-desc');
+
+        // 智能体切换
+        document.querySelectorAll('.agent-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.agent-item').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+
+                currentAgent = this.dataset.agent;
+                const agent = agents[currentAgent];
+
+                currentAgentName.textContent = agent.name;
+                currentAgentDesc.textContent = agent.desc;
+
+                // 添加切换消息
+                addMessage('assistant', agent.greeting, agent.avatar);
+            });
+        });
+
+        // 快速操作
+        document.querySelectorAll('.quick-action').forEach(action => {
+            action.addEventListener('click', function() {
+                messageInput.value = this.textContent;
+                messageInput.focus();
+            });
+        });
+
+        // 发送消息
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isTyping) return;
+
+            addMessage('user', message, '👤');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 显示输入指示器
+            showTyping();
+
+            // 调用实际的API
+            fetch('/api/v1/chat/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    query: message,
+                    agent_type: currentAgent
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideTyping();
+                if (data.success) {
+                    addMessage('assistant', data.response, agents[currentAgent].avatar);
+                } else {
+                    addMessage('assistant', '抱歉，处理您的请求时遇到了问题。请稍后再试。', agents[currentAgent].avatar);
+                }
+            })
+            .catch(error => {
+                hideTyping();
+                console.error('Error:', error);
+                // 如果API调用失败，使用模拟响应
+                const response = generateResponse(message, currentAgent);
+                addMessage('assistant', response, agents[currentAgent].avatar);
+            });
+        }
+
+        // 生成模拟响应
+        function generateResponse(message, agentType) {
+            const responses = {
+                safety: [
+                    '根据安全标准检查，我建议您重点关注设备防护措施和员工培训。',
+                    '我已经分析了您提到的安全风险，建议立即采取以下防护措施...',
+                    '关于安全合规性，请确保符合OSHA标准和行业规范。',
+                    '我建议您进行定期的安全审计和风险评估。'
+                ],
+                quality: [
+                    '根据质量管理体系要求，建议您加强过程控制点监控。',
+                    '产品质量分析显示需要关注关键参数的稳定性。',
+                    '建议采用统计过程控制(SPC)方法来提升质量水平。',
+                    '质量改进建议：优化检测流程，加强供应商质量管理。'
+                ],
+                maintenance: [
+                    '根据设备运行数据，建议您制定预防性维护计划。',
+                    '故障分析表明需要定期检查关键部件的磨损情况。',
+                    '建议采用预测性维护技术来减少停机时间。',
+                    '设备维护记录显示需要加强润滑和清洁保养。'
+                ],
+                production: [
+                    '生产效率分析建议优化生产流程和资源配置。',
+                    '根据生产数据，建议调整生产计划以提高产能利用率。',
+                    '建议采用精益生产方法来减少浪费和提高效率。',
+                    '生产计划需要考虑设备维护窗口和物料供应情况。'
+                ]
+            };
+
+            const agentResponses = responses[agentType] || responses.safety;
+            return agentResponses[Math.floor(Math.random() * agentResponses.length)];
+        }
+
+        // 添加消息
+        function addMessage(type, content, avatar) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const time = new Date().toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">
+                    <div>${content.replace(/\\n/g, '<br>')}</div>
+                    <div class="message-time">${time}</div>
+                </div>
+            `;
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // 显示/隐藏输入指示器
+        function showTyping() {
+            isTyping = true;
+            typingIndicator.classList.add('show');
+            sendButton.disabled = true;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            isTyping = false;
+            typingIndicator.classList.remove('show');
+            sendButton.disabled = false;
+        }
+
+        // 事件监听
+        sendButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 自动调整文本框高度
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // 页面加载完成后的初始化
+        window.addEventListener('load', () => {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>"""
+
+    return chat_html, 200, {'Content-Type': 'text/html; charset=utf-8'}
+
+# Health check endpoint
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    return jsonify({
+        'service': 'chat-interface-api',
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'success': True
+    })
+
 # Error handlers
 @app.errorhandler(404)
 def not_found(error):

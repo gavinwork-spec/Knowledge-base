@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
@@ -58,12 +54,9 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
   body {
-    @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
     margin: 0;
     min-height: 100vh;
@@ -78,102 +71,241 @@
 @layer components {
   /* Manufacturing-specific components */
   .manufacturing-card {
-    @apply bg-card border rounded-lg shadow-manufacturing p-6 transition-all duration-200 hover:shadow-lg;
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+    transition: all 0.2s;
+  }
+
+  .manufacturing-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   .safety-alert {
-    @apply border-l-4 border-safety-red bg-red-50 dark:bg-red-950/20 p-4 rounded-r-lg;
+    border-left: 4px solid #dc2626;
+    background-color: #fef2f2;
+    padding: 1rem;
+    border-radius: 0 0.5rem 0.5rem 0;
+  }
+
+  .dark .safety-alert {
+    background-color: rgba(220, 38, 38, 0.1);
   }
 
   .quality-indicator {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 500;
   }
 
   .quality-excellent {
-    @apply quality-indicator bg-quality-excellent/10 text-quality-excellent dark:bg-quality-excellent/20;
+    background-color: rgba(22, 163, 74, 0.1);
+    color: rgb(22, 163, 74);
+  }
+
+  .dark .quality-excellent {
+    background-color: rgba(22, 163, 74, 0.2);
   }
 
   .quality-good {
-    @apply quality-indicator bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+  }
+
+  .dark .quality-good {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: rgb(74, 222, 128);
   }
 
   .equipment-status {
-    @apply inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
   }
 
   .status-operational {
-    @apply equipment-status bg-status-operational/10 text-status-operational dark:bg-status-operational/20;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+  }
+
+  .dark .status-operational {
+    background-color: rgba(34, 197, 94, 0.2);
   }
 
   .status-maintenance {
-    @apply equipment-status bg-status-maintenance/10 text-status-maintenance dark:bg-status-maintenance/20;
+    background-color: rgba(245, 158, 11, 0.1);
+    color: rgb(245, 158, 11);
+  }
+
+  .dark .status-maintenance {
+    background-color: rgba(245, 158, 11, 0.2);
   }
 
   .search-result-card {
-    @apply manufacturing-card cursor-pointer hover:scale-[1.02] transition-transform;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+
+  .search-result-card:hover {
+    transform: scale(1.02);
   }
 
   .expertise-badge {
-    @apply inline-flex items-center px-2 py-1 rounded text-xs font-semibold;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
   }
 
   .expertise-beginner {
-    @apply expertise-badge bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+    background-color: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+  }
+
+  .dark .expertise-beginner {
+    background-color: rgba(34, 197, 94, 0.2);
+    color: rgb(74, 222, 128);
   }
 
   .expertise-intermediate {
-    @apply expertise-badge bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400;
+    background-color: rgba(59, 130, 246, 0.1);
+    color: rgb(59, 130, 246);
+  }
+
+  .dark .expertise-intermediate {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: rgb(96, 165, 250);
   }
 
   .expertise-advanced {
-    @apply expertise-badge bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400;
+    background-color: rgba(147, 51, 234, 0.1);
+    color: rgb(147, 51, 234);
+  }
+
+  .dark .expertise-advanced {
+    background-color: rgba(147, 51, 234, 0.2);
+    color: rgb(196, 181, 253);
   }
 
   .expertise-expert {
-    @apply expertise-badge bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+  }
+
+  .dark .expertise-expert {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: rgb(252, 165, 165);
   }
 
   /* Chat interface components */
   .chat-message {
-    @apply p-4 rounded-lg max-w-[80%] break-words;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-width: 80%;
+    word-wrap: break-word;
   }
 
   .chat-message-user {
-    @apply chat-message bg-primary text-primary-foreground ml-auto;
+    margin-left: auto;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
   .chat-message-assistant {
-    @apply chat-message bg-secondary text-secondary-foreground;
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
   }
 
   .quick-action-btn {
-    @apply px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    transition: background-color 0.2s;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+  }
+
+  .quick-action-btn:hover {
+    background-color: hsl(var(--primary) / 0.9);
   }
 
   /* Manufacturing theme components */
   .manufacturing-header {
-    @apply bg-gradient-to-r from-primary-600 to-primary-800 text-white shadow-lg;
+    background: linear-gradient(to right, rgb(37 99 235), rgb(30 64 175));
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   .manufacturing-sidebar {
-    @apply bg-card border-r border-border w-64 min-h-screen;
+    background-color: hsl(var(--card));
+    border-right: 1px solid hsl(var(--border));
+    width: 16rem;
+    min-height: 100vh;
   }
 
   .manufacturing-content {
-    @apply flex-1 p-6 bg-background;
+    flex: 1;
+    padding: 1.5rem;
+    background-color: hsl(var(--background));
   }
 
   /* Loading and animations */
   .loading-spinner {
-    @apply animate-spin rounded-full h-8 w-8 border-b-2 border-primary;
+    animation: spin 1s linear infinite;
+    border-radius: 50%;
+    height: 2rem;
+    width: 2rem;
+    border-bottom: 2px solid hsl(var(--primary));
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
 
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .slide-up {
     animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(10px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }
 
@@ -188,15 +320,22 @@
 
   /* Manufacturing utilities */
   .hover-lift {
-    @apply transition-transform duration-200 hover:-translate-y-1;
+    transition: transform 0.2s;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-0.25rem);
   }
 
   .glass {
-    @apply glass-morphism;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
 
   .gradient-border {
-    @apply manufacturing-border;
+    border: 1px solid transparent;
+    background: linear-gradient(45deg, #3b82f6, #10b981, #f59e0b) border-box;
   }
 }
 
@@ -221,7 +360,8 @@
 
 /* Focus styles for accessibility */
 :focus-visible {
-  @apply outline-2 outline-offset-2 outline-ring;
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
 }
 
 /* Print styles */
@@ -231,6 +371,7 @@
   }
 
   .manufacturing-card {
-    @apply shadow-none border border-gray-300;
+    box-shadow: none;
+    border: 1px solid rgb(229 231 235);
   }
 }
